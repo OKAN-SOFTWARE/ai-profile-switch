@@ -1,5 +1,5 @@
 import { createInterface } from 'node:readline';
-import { color, hasColor, cursorUp, clearLine, clearDown, sym } from './ui.mjs';
+import { color, cursorControl, sym } from './ui.mjs';
 
 function rl() {
   return createInterface({ input: process.stdin, output: process.stdout });
@@ -8,13 +8,14 @@ function rl() {
 export async function text(message, defaultVal) {
   const suffix = defaultVal !== undefined ? color.dim(` (${defaultVal})`) : '';
   const r = rl();
+  const cursor = cursorControl();
   return new Promise((resolve) => {
     r.question(`${color.cyan('?')} ${message}${suffix}\n  ${color.dim(sym.arrow)} `, (answer) => {
       r.close();
       const result = answer.trim() || defaultVal || '';
       // Replace 2-line prompt with single completed line: ✓ message … answer
-      if (hasColor) {
-        process.stdout.write(`${cursorUp(2)}\r${clearLine}${color.green(sym.check)} ${message} ${color.dim(sym.dots)} ${color.cyan(result)}\n${clearDown}`);
+      if (cursor.enabled) {
+        process.stdout.write(`${cursor.up(2)}\r${cursor.clearLine}${color.green(sym.check)} ${message} ${color.dim(sym.dots)} ${color.cyan(result)}\n${cursor.clearDown}`);
       }
       resolve(result);
     });
@@ -35,13 +36,14 @@ export async function confirm(message, defaultVal = true) {
 
   return new Promise((resolve) => {
     let selected = defaultVal;
+    const cursor = cursorControl();
 
     const render = (final = false) => {
       const prefix = final ? color.green(sym.check) : color.cyan('?');
       const sep = final ? color.dim(` ${sym.dots} `) : color.dim(` ${sym.arrow} `);
       const no  = !selected ? color.cyan('No')  : color.dim('No');
       const yes =  selected ? color.cyan('Yes') : color.dim('Yes');
-      process.stdout.write(`\r${clearLine}${prefix} ${message}${sep}${no} ${color.dim('/')} ${yes}`);
+      process.stdout.write(`\r${cursor.clearLine}${prefix} ${message}${sep}${no} ${color.dim('/')} ${yes}`);
     };
 
     render();
@@ -84,15 +86,16 @@ export async function select(message, choices, { output = process.stdout, initia
   return new Promise((resolve) => {
     let selected = Math.max(0, Math.min(initial, choices.length - 1));
     let rendered = false;
+    const cursor = cursorControl(output);
 
     const render = () => {
       if (rendered) {
-        output.write(cursorUp(choices.length));
+        output.write(cursor.up(choices.length));
       }
       choices.forEach((choice, i) => {
         const label = typeof choice === 'string' ? choice : choice.label;
         const prefix = i === selected ? color.cyan(`  ${sym.cursor} `) : '    ';
-        output.write(`${clearLine}${prefix}${label}\n`);
+        output.write(`${cursor.clearLine}${prefix}${label}\n`);
       });
       rendered = true;
     };
@@ -123,8 +126,8 @@ export async function select(message, choices, { output = process.stdout, initia
         process.stdin.removeListener('data', onData);
         const choice = choices[selected];
         const value = typeof choice === 'string' ? choice : choice.value;
-        if (hasColor) {
-          output.write(`${cursorUp(choices.length + 1)}\r${clearLine}${color.green(sym.check)} ${message} ${color.dim(sym.dots)} ${color.cyan(value)}\n${clearDown}`);
+        if (cursor.enabled) {
+          output.write(`${cursor.up(choices.length + 1)}\r${cursor.clearLine}${color.green(sym.check)} ${message} ${color.dim(sym.dots)} ${color.cyan(value)}\n${cursor.clearDown}`);
         }
         resolve(value);
       } else if (key === '\x03') {

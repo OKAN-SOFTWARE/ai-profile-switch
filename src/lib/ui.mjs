@@ -28,10 +28,15 @@ export const color = {
   red:     (s) => `${c('31')}${s}${RESET}`,
 };
 
-// Cursor / line helpers — emit only when color is supported (TTY).
-export const cursorUp = (n) => hasColor ? `${ESC}${n}A` : '';
-export const clearLine = hasColor ? `${ESC}2K` : '';
-export const clearDown = hasColor ? `${ESC}0J` : '';
+export function cursorControl(output = process.stdout) {
+  const enabled = Boolean(output.isTTY) && process.env.TERM !== 'dumb';
+  return {
+    enabled,
+    up: (n) => enabled ? `${ESC}${n}A` : '',
+    clearLine: enabled ? `${ESC}2K` : '',
+    clearDown: enabled ? `${ESC}0J` : '',
+  };
+}
 
 // Symbols with ASCII fallback for non-Unicode terminals.
 export const sym = {
