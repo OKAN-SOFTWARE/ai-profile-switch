@@ -7,6 +7,14 @@ description: Local runtime, profile selection and existing launch hooks.
 
 Open a new terminal after first `init` or `install-shell`. These instructions describe the repository source; the new management commands need this source or a release containing them.
 
+## Where to type commands
+
+1. If Claude's chat is open, type `/exit` **in Claude** to return to the terminal.
+2. At the **terminal shell prompt** (`%` or `$`), run `cpf`, choose the profile action, then select Exit when finished.
+3. At the terminal, run `claude` to start a new session.
+
+`cpf` is a shell command; entering it in Claude's chat sends chat text instead of switching profiles. Installing shell integration does not import the default `~/.claude` account or sign in. See [importing your existing account](/guide/commands#import-an-existing-configuration).
+
 | Command | Behavior |
 | --- | --- |
 | `claude [args]` | Launch Claude under the selected profile |
@@ -40,13 +48,13 @@ node bin/cli.mjs install-shell
 
 Open a new terminal afterward so the `cpf` function loads the updated management interface. The command installs the version it runs from; `@latest` does not install unpublished source changes.
 
-This copies the runtime into `~/.claude-profiles/_runtime` and adds a source line to shell configuration. Existing source lines are not duplicated. Read and switch commands do not edit shell files.
+This copies the runtime into `~/.claude-profiles/_runtime` and adds a source line to shell configuration. Active source lines are not duplicated. If the integration appears only in a comment or printed text, rerunning `install-shell` reconnects it. Existing custom overrides after the active source line are preserved. Read and switch commands do not edit shell files.
 
 | Shell | Config file |
 | --- | --- |
-| zsh | `~/.zshrc` |
+| zsh | `$ZDOTDIR/.zshrc` when `ZDOTDIR` is set; otherwise `~/.zshrc` |
 | bash | `~/.bashrc` |
-| fish | `~/.config/fish/config.fish` |
+| fish | `$XDG_CONFIG_HOME/fish/config.fish` when set; otherwise `~/.config/fish/config.fish` |
 | PowerShell | `~/Documents/PowerShell/Microsoft.PowerShell_profile.ps1`, or an existing WindowsPowerShell profile |
 
 Detection uses the current shell and existing config files. Run `install-shell` again after adding a shell. Configure WSL separately inside WSL. Missing Node.js or runtime files produce a repair instruction and an error status.

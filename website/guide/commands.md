@@ -9,7 +9,9 @@ These instructions describe the repository source. The management menu and renam
 
 ## Manage profiles with cpf
 
-Run `cpf` to open the interactive menu. Choose list, switch, add, rename, remove, or exit with ↑/↓ and Enter. Profile management does not launch Claude; run `claude` when you want to start a session.
+Enter `cpf` at the **terminal shell prompt** (`%` or `$`) to open the interactive menu. If Claude's chat is open, enter `/exit` **in Claude** first and wait for the terminal prompt. Typing `cpf` in Claude's chat sends a message instead of running a shell command.
+
+Choose list, switch, add, rename, remove, or exit with ↑/↓ and Enter. The menu stays open after an action; choose Exit when finished. Profile management does not launch Claude; run `claude` at the terminal when you want to start a session.
 
 | Copyable command | Behavior |
 | --- | --- |
@@ -69,17 +71,29 @@ These examples run the source checkout from its root. For a released version, re
 
 ## Import an existing configuration
 
-Create the target profile first, then run:
+To run the original Claude CLI without importing a profile, use `command claude` at a Bash/zsh terminal prompt to bypass the wrapper. It uses Claude's normal configuration; if you have set `CLAUDE_CONFIG_DIR` separately, that path applies.
 
-```bash
-npx claude-account-switch@latest migrate work --from ~/.claude
-```
+Creating a profile or installing shell integration does not automatically copy your normal `~/.claude` account or sign in. During first-time `init`, choose the existing configuration source and the destination profile when prompted. If you already have profiles, `init` only shows a summary; use explicit migration.
 
-The default source combines `~/.claude` with the separate `~/.claude.json`. A configured `CLAUDE_CONFIG_DIR` is also detected with its own `.claude.json`. Use `--from` for a custom directory.
+1. Enter `/exit` in every Claude session using the source or destination before copying.
+2. At the terminal, run `cpf --list` and choose the destination name. If you need a new profile, run `cpf add work` first. Replace `work` below with your chosen name.
+3. From the repository root at the terminal, run the command and confirm the copy:
 
-Import preserves settings, commands, projects, plugins, plans, skills, agents, rules, hooks and `CLAUDE.md`. Symlinks retain their original targets. File credentials are copied with restricted permissions into only the chosen profile. macOS Keychain is not migrated; Claude checks authentication. A `.claude.json` file does not establish login status.
+   ```bash
+   node bin/cli.mjs migrate work --from ~/.claude
+   ```
 
-The source is retained. Equal or nested source/target paths are rejected. Different existing target or shared data stops import with a conflict path. Invalid JSON is never treated as empty configuration.
+4. At the terminal, run `claude`, select `work`, and sign in to the intended account if asked.
+
+For a published version, the equivalent command is `npx claude-account-switch@latest migrate work --from ~/.claude`. The fixes in this source checkout require installing or running this source until a release includes them.
+
+The default source combines `~/.claude` with the separate `~/.claude.json`. A configured `CLAUDE_CONFIG_DIR` is also detected with its own `.claude.json`. Use `--from` for a custom directory. The source files remain unchanged.
+
+Import preserves settings, commands, projects, plugins, plans, skills, agents, rules, hooks, and `CLAUDE.md`. It also copies keyboard shortcuts, file history, output styles, agent memory, workflows, themes, and tasks. Symlinks retain their original targets. File credentials are copied with restricted permissions into only the chosen profile. macOS Keychain is not migrated, so Claude may require login again. Copying `.claude.json` alone does not establish login status.
+
+Equal or nested source/target paths are rejected. Different existing target or shared data stops import with a conflict path. Invalid JSON is never treated as empty configuration. If destination or shared data changes while preparing the copy, the detected change stops replacement instead of overwriting it. Keep Claude sessions using the source and destination closed until copying finishes.
+
+When existing destination or shared data is replaced, its previous copy remains at the backup path printed after success. This is separate from the untouched source. Keep that backup until you have checked the migrated profile.
 
 ## MCP compatibility
 

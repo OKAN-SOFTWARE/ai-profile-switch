@@ -17,7 +17,8 @@ function help() {
   cpf remove <name>           Delete a profile after confirmation
   cpf --help                  Show this help
 
-Run claude to launch the selected account.
+Enter these commands in your terminal, outside the Claude Code chat. Use /exit to leave the chat.
+Run claude to choose a profile and launch Claude Code.
 Before renaming, close sessions using that profile; macOS may require sign-in again.
 Without shell setup, use: npx claude-account-switch@latest manage [arguments]`);
 }

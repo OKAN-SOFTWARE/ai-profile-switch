@@ -21,12 +21,11 @@ Choose profile names (for example, `work` and `personal`), optionally copy one e
 
 ## Two commands for everyday use
 
-```bash
-claude
-cpf
-```
+Run `cpf` and `claude` at your **terminal's shell prompt** (`%` or `$`). If you are inside Claude's chat, enter `/exit` there first and wait for the terminal prompt.
 
-`claude` selects a profile and launches Claude Code. `cpf` opens a management menu: list, switch, add, rename, remove, or exit. Use ↑/↓ and Enter to choose. Managing profiles does not launch Claude.
+1. At the terminal, run `cpf` to open the list, switch, add, rename, remove, or exit menu.
+2. Choose with ↑/↓ and Enter. When finished, select Exit to return to the terminal without launching Claude.
+3. At the terminal, run `claude`, choose a profile, and sign in if Claude asks.
 
 For a direct action, use:
 
@@ -45,12 +44,39 @@ With multiple profiles, interactive `claude` launches show a picker, starting on
 
 ## Add another account
 
-```bash
-cpf add work2
-claude
-```
+1. At the terminal, create the profile:
 
-Select `work2` in the Claude picker, then sign in to the intended account when Claude asks. Creating a profile does not switch to it or sign in for you. The `cpf` menu can also add a profile without memorizing the command.
+   ```bash
+   cpf add work2
+   ```
+
+2. Start Claude from the terminal:
+
+   ```bash
+   claude
+   ```
+
+3. Select `work2` in the picker, then sign in to the intended account when Claude asks.
+
+Creating a profile does not switch to it or sign in for you. The `cpf` menu can also add a profile without memorizing the command.
+
+## Bring in your existing default account
+
+To run the original Claude CLI without importing a profile, use `command claude` at a Bash/zsh terminal prompt to bypass the wrapper. It uses Claude's normal configuration; if you have set `CLAUDE_CONFIG_DIR` separately, that path applies.
+
+Your normal `~/.claude` configuration is not automatically imported or logged in when you create a profile. First-time `init` lets you select that source and the destination profile. If profiles already exist, rerunning `init` only shows a summary; use an explicit migration instead.
+
+1. Enter `/exit` in every Claude session using the source or destination, then return to the terminal.
+2. Choose a destination with `cpf --list`. If you need a new profile, create it with `cpf add work`.
+3. From this repository's root in the terminal, copy into that profile and confirm the prompt:
+
+   ```bash
+   node bin/cli.mjs migrate work --from ~/.claude
+   ```
+
+4. At the terminal, run `claude`, select `work`, and sign in if requested. Replace `work` with your chosen profile name.
+
+The original `~/.claude` and `~/.claude.json` are preserved. If existing destination data is replaced, its previous copy is also retained at the backup path printed after success. Conflicting data or detected destination changes stop migration. macOS Keychain credentials are not copied, so importing configuration does not guarantee an authenticated session. See [migration details](https://ftery0.github.io/claude-account-switch/guide/commands#import-an-existing-configuration).
 
 ## Fix a profile name
 

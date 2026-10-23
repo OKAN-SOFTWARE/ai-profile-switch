@@ -48,7 +48,7 @@ function showHelp(command) {
   console.log(`
   ${color.bold('claude-account-switch')} — Profile switching for Claude Code
 
-  Everyday commands (after shell setup):
+  Everyday commands (in your terminal, after shell setup):
     claude                 Select a profile and launch Claude Code
     cpf                    Open the profile management menu
     cpf work               Switch to an existing profile
