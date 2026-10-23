@@ -125,6 +125,39 @@ describe('automatic immutable runtime updates', () => {
     utimesSync(lock, old, old);
     assert.equal((await runSelfUpdate({ computePlan, download: fixtureDownload() })).action, 'updated');
   });
+  for (const owner of ['{', '{}', 'null', '{"pid":0}']) {
+    it(`recovers an old interrupted owner file ${owner}`, async () => {
+      const lock = join(PROFILES_DIR, '_update-lock');
+      mkdirSync(lock);
+      const file = join(lock, 'owner.json');
+      writeFileSync(file, owner);
+      const old = new Date(Date.now() - 600000);
+      utimesSync(file, old, old);
+      utimesSync(lock, old, old);
+      assert.equal((await runSelfUpdate({ computePlan, download: fixtureDownload() })).action, 'updated');
+      assert.equal(existsSync(lock), false);
+    });
+  }
+  it('preserves a recently created malformed owner while an updater may be writing it', async () => {
+    const lock = join(PROFILES_DIR, '_update-lock');
+    mkdirSync(lock);
+    const file = join(lock, 'owner.json');
+    writeFileSync(file, '{');
+    const result = await runSelfUpdate({ force: true, computePlan: () => assert.fail('lock must remain busy') });
+    assert.equal(result.reason, 'busy');
+    assert.equal(readFileSync(file, 'utf8'), '{');
+  });
+  it('does not remove unknown files inside an unrecognized updater lock', async () => {
+    const lock = join(PROFILES_DIR, '_update-lock');
+    mkdirSync(lock);
+    writeFileSync(join(lock, 'unknown.txt'), 'keep');
+    const old = new Date(Date.now() - 600000);
+    utimesSync(lock, old, old);
+    const result = await runSelfUpdate({ force: true, computePlan: () => assert.fail('unknown lock must remain busy') });
+    assert.equal(result.reason, 'busy');
+    assert.equal(readFileSync(join(lock, 'unknown.txt'), 'utf8'), 'keep');
+  });
+
   it('recovers malformed updater state without editing account metadata', async () => {
     writeFileSync(stateFile, 'interrupted JSON');
     assert.equal((await runSelfUpdate({ computePlan, download: fixtureDownload() })).action, 'updated');

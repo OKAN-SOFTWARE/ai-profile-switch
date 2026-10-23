@@ -62,15 +62,23 @@ function acquireLock() {
   } catch (error) {
     if (error.code !== 'EEXIST') throw error;
     if (lstatSync(lockDir).isSymbolicLink()) throw new Error('Update lock must not be a symlink');
+    const entries = readdirSync(lockDir);
+    const ownerFile = join(lockDir, 'owner.json');
     let owner;
-    try { owner = JSON.parse(readFileSync(join(lockDir, 'owner.json'), 'utf8')); } catch {
-      if (readdirSync(lockDir).length !== 0 || Date.now() - statSync(lockDir).mtimeMs < 300000) return null;
+    let modified = statSync(lockDir).mtimeMs;
+    if (entries.includes('owner.json')) {
+      const entry = lstatSync(ownerFile);
+      if (!entry.isFile()) return null;
+      modified = Math.max(modified, entry.mtimeMs);
+      try { owner = JSON.parse(readFileSync(ownerFile, 'utf8')); } catch {}
     }
-    if (owner) {
-      if (!Number.isInteger(owner.pid) || owner.pid < 1) return null;
+    if (owner && Number.isInteger(owner.pid) && owner.pid > 0) {
       try { process.kill(owner.pid, 0); return null; } catch (probe) {
         if (probe.code !== 'ESRCH') return null;
       }
+    } else if (entries.some(name => name !== 'owner.json') || Date.now() - modified < 300000) {
+      // Allow an interrupted owner write to settle before reclaiming its lock.
+      return null;
     }
     const stale = lockDir + '-stale-' + randomUUID();
     try { renameSync(lockDir, stale); } catch { return null; }

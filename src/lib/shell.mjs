@@ -56,10 +56,10 @@ export function installAllShells() {
   if (existsSync(join(HOME, '.bashrc')) || currentShell === 'bash') {
     track('bash', installUnixRc('bash'));
   }
-  if (existsSync(join(HOME, '.zshrc')) || currentShell === 'zsh' || process.platform === 'darwin') {
+  if (existsSync(join(process.env.ZDOTDIR || HOME, '.zshrc')) || currentShell === 'zsh' || process.platform === 'darwin') {
     track('zsh', installUnixRc('zsh'));
   }
-  if (existsSync(join(HOME, '.config', 'fish')) || currentShell === 'fish') {
+  if (existsSync(join(process.env.XDG_CONFIG_HOME || join(HOME, '.config'), 'fish')) || currentShell === 'fish') {
     track('fish', installFishConfig());
   }
 
@@ -108,13 +108,14 @@ function writeTemplate(templateName, targetFile) {
 
 
 function installUnixRc(shell) {
-  const rcFile = shell === 'zsh' ? join(HOME, '.zshrc') : join(HOME, '.bashrc');
+  const rcFile = shell === 'zsh' ? join(process.env.ZDOTDIR || HOME, '.zshrc') : join(HOME, '.bashrc');
+  mkdirSync(dirname(rcFile), { recursive: true });
   const sourceLine = '[ -f ~/.claude-profiles/.shell-integration.sh ] && . ~/.claude-profiles/.shell-integration.sh';
   return addSourceLine(rcFile, sourceLine, '.shell-integration.sh');
 }
 
 function installFishConfig() {
-  const configDir = join(HOME, '.config', 'fish');
+  const configDir = join(process.env.XDG_CONFIG_HOME || join(HOME, '.config'), 'fish');
   const configFile = join(configDir, 'config.fish');
   const sourceLine = 'test -f ~/.claude-profiles/.shell-integration.fish && source ~/.claude-profiles/.shell-integration.fish';
   mkdirSync(configDir, { recursive: true });
@@ -161,6 +162,28 @@ function windowsDocuments() {
   return fallback;
 }
 
+function hasActiveSource(text, marker) {
+  // Match source commands, not comments or mentions of a template filename.
+  if (marker.endsWith('.ps1')) text = text.replace(/<#[\s\S]*?#>/g, '');
+  const command = /(?:^\s*|[;&|]\s*|\bthen\s+)(?:source|\.)[ \t]+("[^"]*"|'[^']*'|[^\s;&|#]+)/g;
+  return text.replace(/^\uFEFF/, '').split(/\r?\n/).some(line => {
+    for (const match of line.matchAll(command)) {
+      let quote = null;
+      let escaped = false;
+      for (const char of line.slice(0, match.index)) {
+        if (escaped) { escaped = false; continue; }
+        if (char === (marker.endsWith('.ps1') ? '`' : '\\') && quote !== "'") { escaped = true; continue; }
+        if (quote) { if (char === quote) quote = null; }
+        else if (char === '"' || char === "'") quote = char;
+        else if (char === '#') return false;
+      }
+      const target = match[1].replace(/^["']|["']$/g, '');
+      if (!quote && (target === marker || target.endsWith('/' + marker) || target.endsWith('\\' + marker))) return true;
+    }
+    return false;
+  });
+}
+
 /** @returns {boolean} true if newly installed, false if already present */
 function addSourceLine(rcFile, sourceLine, marker) {
   const content = existsSync(rcFile) ? readFileSync(rcFile) : Buffer.alloc(0);
@@ -186,7 +209,17 @@ function addSourceLine(rcFile, sourceLine, marker) {
     for (let index = 0; index < text.length; index++) bytes.writeUInt32LE(text.charCodeAt(index), index * 4);
     return bigEndian ? bytes.swap32() : bytes;
   };
-  if (content.includes(encode(marker))) return false;
+  let text;
+  if (width === 1) text = content.toString('utf8');
+  else if (width === 2) text = (bigEndian ? Buffer.from(content).swap16() : content).toString('utf16le');
+  else {
+    text = '';
+    for (let index = 0; index < content.length; index += 4) {
+      const point = bigEndian ? content.readUInt32BE(index) : content.readUInt32LE(index);
+      text += String.fromCodePoint(point <= 0x10ffff ? point : 0xfffd);
+    }
+  }
+  if (hasActiveSource(text, marker)) return false;
   const newline = content.includes(encode('\r\n')) ? '\r\n' : '\n';
   const lf = encode('\n');
   const separator = content.length > 0 && !content.subarray(-lf.length).equals(lf) ? newline : '';
