@@ -15,15 +15,39 @@ Use Node.js 18.19+ (18.x) or 20.10+ and your existing Claude Code installation. 
 npx claude-account-switch@latest init
 ```
 
-Choose profile names, optionally copy one existing configuration, then open a new terminal:
+Choose profile names (for example, `work` and `personal`), optionally copy one existing configuration, then open a new terminal. Run `claude`, select a profile with ↑/↓ and Enter, and sign in to the account you want to use for that profile when Claude asks.
+
+## Everyday commands
+
+| Command | What it does |
+| --- | --- |
+| `claude` | Select a profile and launch Claude Code |
+| `cpf work` | Make `work` active without launching Claude |
+| `claude-pick` | Select the active profile with ↑/↓ and Enter, without launching Claude |
+| `npx claude-account-switch@latest list` | Show all profiles and the active one |
+
+Replace `work` with your profile name. With multiple profiles, interactive `claude` launches always show the picker, starting on the active profile. In scripts, `claude` uses the active profile without a picker. Claude arguments, including `--help` and `--version`, pass through.
+
+Switching affects future launches. Already running Claude sessions keep their profile and account.
+
+## Add another account
+
+For example, to create a profile named `work2`:
 
 ```bash
+npx claude-account-switch@latest add work2
 claude
-cpf personal
-claude-pick
 ```
 
-With multiple profiles, `claude` shows a picker in interactive terminals. In scripts it uses the active profile. Claude arguments, including `--help` and `--version`, pass through.
+Select `work2` in the picker, then sign in to the intended account when Claude asks. `add` creates a profile; it does not switch profiles or sign in for you. Each new account needs its own login in Claude.
+
+To select an existing profile by name without the shortcut:
+
+```bash
+npx claude-account-switch@latest use work
+```
+
+Use `add <name>` for another profile. `init` is first-time setup; rerunning it only shows the current setup. `install-shell` installs or repairs the shell commands and local runtime; it does not add profiles or log in.
 
 ## Existing users
 
@@ -39,7 +63,9 @@ Interactive Claude launches check for this tool's updates once daily in the back
 
 Set `CLAUDE_SWITCH_DISABLE_AUTO_UPDATE=1` to disable automatic updates. For an immediate update, run `npx claude-account-switch@latest update`; add `--check` to check without installing. Global npm installations are independent; the shell runtime updates itself. Previous runtime versions are retained to protect active sessions.
 
-## Commands
+## Command reference
+
+Run these as `npx claude-account-switch@latest <command>` (for example, `npx claude-account-switch@latest update --check`). A global installation is optional.
 
 | Command | Purpose |
 | --- | --- |

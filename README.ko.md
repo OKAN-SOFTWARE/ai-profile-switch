@@ -15,15 +15,39 @@ Node.js 18.19+ (18계열) 또는 20.10+와 기존 Claude Code 설치를 사용�
 npx claude-account-switch@latest init
 ```
 
-프로필 이름을 정하고 기존 설정 하나를 가져올지 선택한 뒤, 새 터미널을 엽니다.
+프로필 이름(예: `work`, `personal`)을 정하고 기존 설정 하나를 가져올지 선택한 뒤, 새 터미널을 엽니다. `claude`를 실행하고 ↑/↓와 Enter로 프로필을 고릅니다. Claude가 로그인을 요청하면 해당 프로필에서 사용할 계정으로 로그인합니다.
+
+## 평소에 쓰는 명령어
+
+| 명령 | 하는 일 |
+| --- | --- |
+| `claude` | 프로필을 고르고 Claude Code 실행 |
+| `cpf work` | Claude를 실행하지 않고 `work`를 활성 프로필로 지정 |
+| `claude-pick` | Claude를 실행하지 않고 ↑/↓와 Enter로 활성 프로필 선택 |
+| `npx claude-account-switch@latest list` | 전체 프로필과 현재 활성 프로필 확인 |
+
+`work`는 원하는 프로필 이름으로 바꿉니다. 프로필이 여러 개이면 대화형 터미널의 `claude` 실행 시 항상 선택기가 나오며, 현재 활성 프로필이 처음 선택되어 있습니다. 스크립트에서는 선택기 없이 활성 프로필을 사용합니다. `--help`, `--version`을 포함한 Claude 인자는 그대로 전달됩니다.
+
+프로필 전환은 이후 실행에 적용됩니다. 이미 실행 중인 Claude 세션은 기존 프로필과 계정을 유지합니다.
+
+## 계정 하나 더 추가하기
+
+예를 들어 `work2`라는 프로필을 추가하려면:
 
 ```bash
+npx claude-account-switch@latest add work2
 claude
-cpf personal
-claude-pick
 ```
 
-프로필이 여러 개이면 대화형 터미널에서 `claude` 실행 시 선택기가 나옵니다. 스크립트에서는 활성 프로필을 사용합니다. `--help`, `--version`을 포함한 Claude 인자는 그대로 전달됩니다.
+선택기에서 `work2`를 고르고, Claude가 로그인을 요청하면 사용할 계정으로 로그인합니다. `add`는 프로필만 만들며 프로필 전환이나 로그인을 대신하지 않습니다. 새 계정은 Claude에서 따로 로그인해야 합니다.
+
+단축 명령어 없이 이름으로 기존 프로필을 전환하려면:
+
+```bash
+npx claude-account-switch@latest use work
+```
+
+프로필을 추가할 때는 `add <name>`을 사용합니다. `init`은 첫 설정용이며, 다시 실행하면 현재 설정만 보여줍니다. `install-shell`은 셸 명령어와 로컬 실행 파일을 설치·복구하는 명령으로, 프로필 추가나 로그인은 하지 않습니다.
 
 ## 기존 사용자
 
@@ -39,7 +63,9 @@ npx claude-account-switch@latest install-shell
 
 `CLAUDE_SWITCH_DISABLE_AUTO_UPDATE=1`로 자동 업데이트를 끌 수 있습니다. 즉시 갱신하려면 `npx claude-account-switch@latest update`를 실행하고, 설치 없이 확인하려면 `--check`를 붙입니다. 글로벌 npm 설치본과 셸 실행 파일은 별개이며, 자동 업데이트는 셸 실행 파일만 갱신합니다. 실행 중인 세션 보호를 위해 이전 실행 파일은 보존합니다.
 
-## 명령어
+## 전체 명령어
+
+아래 명령은 `npx claude-account-switch@latest <명령>` 형태로 실행합니다(예: `npx claude-account-switch@latest update --check`). 글로벌 설치는 선택 사항입니다.
 
 | 명령 | 용도 |
 | --- | --- |
