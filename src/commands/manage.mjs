@@ -6,6 +6,7 @@ import { list } from './list.mjs';
 import { use } from './use.mjs';
 import { remove } from './remove.mjs';
 import { rename } from './rename.mjs';
+import { share } from './share.mjs';
 
 function help() {
   console.log(`Usage:
@@ -15,6 +16,9 @@ function help() {
   cpf add <name>              Create a profile
   cpf rename <old> <new>       Rename a profile, keeping its data
   cpf remove <name>           Delete a profile after confirmation
+  cpf share                   Show what every profile shares
+  cpf share add <entry>       Share CLAUDE.md, skills, agents, … across profiles
+  cpf share remove <entry>    Stop sharing; each profile keeps a copy
   cpf --help                  Show this help
 
 Enter these commands in your terminal, outside the Claude Code chat. Use /exit to leave the chat.
@@ -29,6 +33,7 @@ export async function manage(args = []) {
     return;
   }
   if (args.length === 1 && args[0] === '--list') return list();
+  if (args[0] === 'share') return share(args.slice(1));
   if (args.length === 1 && !args[0].startsWith('-')) return use(args[0]);
   if (args.length > 0) {
     const [command, ...names] = args;
@@ -52,6 +57,7 @@ export async function manage(args = []) {
       { label: 'Add profile', value: 'add' },
       { label: 'Rename profile', value: 'rename' },
       { label: 'Delete profile', value: 'remove' },
+      { label: 'Show shared items', value: 'share' },
       { label: 'Exit', value: 'exit' },
     ] : [
       { label: 'Add profile', value: 'add' },
@@ -62,6 +68,8 @@ export async function manage(args = []) {
     try {
       if (action === 'list') {
         await list();
+      } else if (action === 'share') {
+        await share();
       } else if (action === 'add') {
         const name = await prompt.text('New profile name (empty to cancel):');
         if (name) await add(name);

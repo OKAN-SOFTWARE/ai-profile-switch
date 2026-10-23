@@ -13,14 +13,14 @@ import { createHash } from 'node:crypto';
 import { addProfileToMeta, removeProfileFromMeta, readMeta, writeMeta } from './config.mjs';
 import { warn } from './ui.mjs';
 
-function pathExists(path) {
+export function pathExists(path) {
   try { lstatSync(path); return true; } catch (err) {
     if (err.code === 'ENOENT' || err.code === 'ENOTDIR') return false;
     throw err;
   }
 }
 
-function createLink(target, link, isDir, copySource = resolve(dirname(link), target)) {
+export function createLink(target, link, isDir, copySource = resolve(dirname(link), target)) {
   if (pathExists(link)) return;
   if (IS_WINDOWS && isDir) {
     symlinkSync(resolve(dirname(link), target), link, 'junction');
@@ -150,7 +150,7 @@ export function migrationSource(sourceDir) {
   };
 }
 
-function canonicalPath(path) {
+export function canonicalPath(path) {
   if (pathExists(path)) return realpathSync(path);
   return join(canonicalPath(dirname(path)), basename(path));
 }
@@ -160,11 +160,11 @@ function pathsOverlap(left, right) {
   return distance === '' || (distance !== '..' && !distance.startsWith(`..${sep}`) && !isAbsolute(distance));
 }
 
-function linkTarget(path) {
+export function linkTarget(path) {
   return resolve(realpathSync(dirname(path)), readlinkSync(path));
 }
 
-function copyEntry(source, destination) {
+export function copyEntry(source, destination) {
   const info = lstatSync(source);
   if (info.isSymbolicLink()) {
     const target = linkTarget(source);
@@ -180,7 +180,7 @@ function copyEntry(source, destination) {
   }
 }
 
-function identicalEntries(source, destination) {
+export function identicalEntries(source, destination) {
   let from = lstatSync(source);
   let to = lstatSync(destination);
   if (from.isSymbolicLink() && to.isSymbolicLink() && linkTarget(source) === linkTarget(destination)) return true;
@@ -200,7 +200,7 @@ function identicalEntries(source, destination) {
     entry === existing[index] && identicalEntries(join(source, entry), join(destination, entry)));
 }
 
-function emptyEntry(path) {
+export function emptyEntry(path) {
   const info = lstatSync(path);
   if (info.isSymbolicLink()) return false;
   if (info.isDirectory()) return readdirSync(path).length === 0;
