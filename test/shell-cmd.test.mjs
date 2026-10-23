@@ -2,7 +2,7 @@ import './helpers/home.mjs';
 import { after, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync, statSync, cpSync, rmSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync, statSync, cpSync, rmSync, symlinkSync } from 'node:fs';
 import { dirname, join, win32 } from 'node:path';
 import { runInNewContext } from 'node:vm';
 import { fileURLToPath } from 'node:url';
@@ -81,6 +81,33 @@ describe('shell command and local runtime', () => {
     assert.equal(picked.stderr, '');
     assert.equal(nativeOutput(await runCli(['shell', 'launch'], fixture)).config, join(fixture.profilesDir, 'personal'));
   });
+
+  for (const kind of ['file', 'symbolic link', 'missing']) {
+    it('rejects a registered profile whose directory is ' + kind + ' before launching or switching', async () => {
+      const fixture = makeHome(['work', 'personal']);
+      const path = join(fixture.profilesDir, 'work');
+      const external = join(fixture.workspace, 'unrelated');
+      mkdirSync(external);
+      writeFileSync(join(external, 'keep.txt'), 'unchanged');
+      rmSync(path, { recursive: true });
+      if (kind === 'file') writeFileSync(path, 'not a profile directory');
+      if (kind === 'symbolic link') symlinkSync(external, path, windows ? 'junction' : 'dir');
+      const meta = readFileSync(join(fixture.profilesDir, 'meta.json'));
+      for (const args of [
+        ['shell', 'use', 'work'],
+        ['shell', 'pick', '--print'],
+        ['shell', 'launch'],
+        ['shell', 'launch', '--profile', 'work', '--', '--help'],
+      ]) {
+        const result = await runCli(args, fixture);
+        assert.equal(result.code, 1, result.stdout + result.stderr);
+        assert.equal(result.stdout, '');
+        assert.match(result.stderr, /directory is missing|must be a directory/);
+      }
+      assert.deepEqual(readFileSync(join(fixture.profilesDir, 'meta.json')), meta);
+      assert.equal(readFileSync(join(external, 'keep.txt'), 'utf8'), 'unchanged');
+    });
+  }
 
   it('uses the Windows npm JS fallback with preserved arguments and status', async t => {
     if (!windows) return t.skip('Windows npm.cmd fallback requires native Windows');

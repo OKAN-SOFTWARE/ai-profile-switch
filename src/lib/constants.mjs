@@ -20,8 +20,11 @@ export const SHARED_DIRS = ['commands'];
 // Files/dirs that are profile-specific (copied independently)
 export const PROFILE_FILES = [
   '.claude.json', '.credentials.json', 'settings.local.json', 'history.jsonl', 'CLAUDE.md',
-  'pre-launch.sh', 'pre-launch.fish', 'pre-launch.ps1',
+  'keybindings.json', 'pre-launch.sh', 'pre-launch.fish', 'pre-launch.ps1',
 ];
-export const PROFILE_DIRS = ['plugins', 'projects', 'plans', 'skills', 'agents', 'rules', 'hooks'];
+export const PROFILE_DIRS = [
+  'plugins', 'projects', 'plans', 'skills', 'agents', 'rules', 'hooks',
+  'file-history', 'output-styles', 'agent-memory', 'workflows', 'themes', 'tasks',
+];
 
 export const SELF_PKG = 'claude-account-switch';

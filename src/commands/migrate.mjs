@@ -41,13 +41,15 @@ export async function migrate(profileName, argv = []) {
   console.log(`  Source : ${color.cyan(source)}`);
   console.log(`  Profile: ${color.cyan(target)}`);
   console.log('  Existing conflicting data will stop migration. The source will be preserved.');
+  warn('Close Claude sessions using the source or destination before continuing. Keep them closed until migration finishes.');
   const confirmed = await prompt.confirm(`Copy configuration into "${target}"?`, true);
   if (!confirmed) {
     console.log('  Cancelled.');
     return;
   }
-  migrateDir(source, target, meta.shareSettings !== false);
+  const { backupPath } = migrateDir(source, target, meta.shareSettings !== false);
   success(`Copied ${source} → profile: ${target}`);
+  if (backupPath) warn(`Previous destination data backup: ${backupPath}`);
   warn('Original configuration was preserved. macOS Keychain credentials are not copied.');
   console.log('  Claude will check authentication when you launch this profile.');
   console.log();

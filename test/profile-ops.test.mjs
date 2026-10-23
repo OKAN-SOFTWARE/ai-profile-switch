@@ -132,8 +132,11 @@ describe('migration data preservation', () => {
     write(join(source, 'commands', 'custom.md'), '# command');
     migrateDir(source, 'work');
     const before = snapshot(PROFILES_DIR);
-    migrateDir(source, 'work');
-    assert.deepEqual(snapshot(PROFILES_DIR), before);
+    const { backupPath } = migrateDir(source, 'work');
+    const after = snapshot(PROFILES_DIR);
+    assert.ok(backupPath && after[basename(backupPath)], 'repeated migration keeps a separate recovery backup');
+    delete after[basename(backupPath)];
+    assert.deepEqual(after, before, 'live data and earlier backups remain unchanged');
   });
 
   it('accepts source links to identical existing shared settings and commands', { skip: process.platform === 'win32' }, () => {
