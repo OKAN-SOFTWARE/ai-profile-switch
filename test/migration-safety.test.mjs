@@ -2,8 +2,8 @@ import './helpers/home.mjs';
 import { beforeEach, describe, it, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import fs, {
-  appendFileSync, closeSync, existsSync, lstatSync, mkdirSync, openSync,
-  readFileSync, readlinkSync, readdirSync, rmSync, writeFileSync, writeSync,
+  appendFileSync, closeSync, existsSync, lstatSync, mkdirSync, mkdtempSync, openSync,
+  readFileSync, readlinkSync, readdirSync, renameSync, rmSync, writeFileSync, writeSync,
 } from 'node:fs';
 import { join, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -40,6 +40,26 @@ function source() {
 function stages() {
   return readdirSync(PROFILES_DIR).filter(name => name.startsWith('.migration-'));
 }
+
+// POSIX moves a folder with an open file in it; Windows and WSL1 refuse.
+function canMoveFolderWithOpenFile() {
+  const folder = mkdtempSync(join(HOME, 'open-file-probe-'));
+  const moved = `${folder}-moved`;
+  const fd = openSync(join(folder, 'held'), 'a');
+  try {
+    renameSync(folder, moved);
+    return true;
+  } catch (err) {
+    if (!['EPERM', 'EACCES', 'EBUSY'].includes(err.code)) throw err;
+    return false;
+  } finally {
+    closeSync(fd);
+    rmSync(folder, { recursive: true, force: true });
+    rmSync(moved, { recursive: true, force: true });
+  }
+}
+
+const CAN_MOVE_OPEN_FOLDER = canMoveFolderWithOpenFile();
 
 function restoreMocks() {
   mock.restoreAll();
@@ -101,12 +121,18 @@ describe('migration data coverage and recovery backups', () => {
     assert.equal(readFileSync(join(SHARED_DIR, 'settings.json'), 'utf8'), '{"theme":"dark"}');
   });
 
-  it('keeps a late write through an existing file descriptor recoverable after publication', () => {
+  it('keeps a late write through an existing file descriptor recoverable, or refuses while the file is held open', () => {
     createProfile('work', false);
     const history = join(profileDir('work'), 'history.jsonl');
     write(history, 'original history\n');
     const fd = openSync(history, 'a');
     try {
+      if (!CAN_MOVE_OPEN_FOLDER) {
+        assert.throws(() => migrateDir(source(), 'work', false), /Migration destination is in use/);
+        assert.equal(readFileSync(history, 'utf8'), 'original history\n');
+        assert.deepEqual(stages(), []);
+        return;
+      }
       const { backupPath } = migrateDir(source(), 'work', false);
       writeSync(fd, 'late session write\n');
       assert.equal(readFileSync(history, 'utf8'), 'original history\n');
