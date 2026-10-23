@@ -38,7 +38,7 @@ export async function update(args = []) {
   console.log('Package                 Installed   Latest');
   console.log(`${self.pkg}   ${self.installed}       ${self.latest}`);
   if (!self.hasUpdate) info('This package is up to date.');
-  else if (values.check) info('Run claude-account-switch update to install.');
+  else if (values.check) info('Run npx claude-account-switch@latest update to install.');
   else {
     const result = await runSelfUpdate({ force: true, computePlan: async () => ({ self }) });
     if (result.action === 'updated') info(`Updated to ${result.version}. New launches use this version; active sessions keep their files.`);

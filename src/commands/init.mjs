@@ -26,8 +26,8 @@ export async function init() {
     warn('claude-account-switch is already initialized.');
     console.log(`  Profiles: ${current.profiles.join(', ')}`);
     console.log(`  Active: ${current.activeProfile || 'none'}`);
-    console.log(`  Add an account: ${color.cyan('claude-account-switch add <name>')}`);
-    console.log(`  Repair shell integration: ${color.cyan('claude-account-switch install-shell')}`);
+    console.log(`  Add an account: ${color.cyan('cpf add <name>')}`);
+    console.log(`  Repair shell integration: ${color.cyan('npx claude-account-switch@latest install-shell')}`);
     return;
   }
 

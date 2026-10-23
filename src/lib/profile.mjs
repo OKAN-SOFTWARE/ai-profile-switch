@@ -9,7 +9,7 @@ import {
   PROFILE_NAME_REGEX, PROFILE_NAME_MAX_LENGTH, RESERVED_NAMES,
   SHARED_FILES, SHARED_DIRS, PROFILE_FILES, PROFILE_DIRS,
 } from './constants.mjs';
-import { addProfileToMeta, removeProfileFromMeta, readMeta } from './config.mjs';
+import { addProfileToMeta, removeProfileFromMeta, readMeta, writeMeta } from './config.mjs';
 import { warn } from './ui.mjs';
 
 function pathExists(path) {
@@ -82,10 +82,56 @@ export function createProfile(name, shareSettings = true) {
   addProfileToMeta(name);
 }
 
-export function removeProfile(name) {
+export function assertRegisteredProfile(name) {
+  const error = validateProfileName(name);
+  if (error) throw new Error(error);
+  const meta = readMeta();
+  if (!meta.profiles.includes(name)) throw new Error(`Profile "${name}" is not registered`);
   const dir = profileDir(name);
-  if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+  if (!pathExists(dir)) throw new Error(`Profile "${name}" directory is missing`);
+  const entry = lstatSync(dir);
+  if (entry.isSymbolicLink() || !entry.isDirectory()) {
+    throw new Error(`Profile "${name}" must be a directory, not a symbolic link or file`);
+  }
+  return meta;
+}
+
+export function removeProfile(name) {
+  assertRegisteredProfile(name);
+  rmSync(profileDir(name), { recursive: true, force: true });
   removeProfileFromMeta(name);
+}
+
+export function renameProfile(oldName, newName) {
+  const meta = assertRegisteredProfile(oldName);
+  const error = validateProfileName(newName);
+  if (error) throw new Error(error);
+  if (oldName === newName) return false;
+  const oldDir = profileDir(oldName);
+  const newDir = profileDir(newName);
+  if (meta.profiles.includes(newName) || pathExists(newDir)) {
+    throw new Error(`Profile "${newName}" already exists`);
+  }
+
+  renameSync(oldDir, newDir);
+  try {
+    writeMeta({
+      ...meta,
+      profiles: meta.profiles.map(name => name === oldName ? newName : name),
+      activeProfile: meta.activeProfile === oldName ? newName : meta.activeProfile,
+    });
+  } catch (err) {
+    try {
+      if (pathExists(oldDir)) throw new Error(`Original path is now occupied: ${oldDir}`);
+      renameSync(newDir, oldDir);
+    } catch (rollbackError) {
+      throw new Error(`Profile rename rollback failed. Profile data is preserved at ${newDir}. Restore it to ${oldDir} before continuing.`, {
+        cause: new AggregateError([err, rollbackError]),
+      });
+    }
+    throw err;
+  }
+  return true;
 }
 
 export function listProfiles() {

@@ -1,8 +1,32 @@
-import { createInterface } from 'node:readline';
+import { createInterface, emitKeypressEvents } from 'node:readline';
+import { PassThrough } from 'node:stream';
 import { color, cursorControl, sym } from './ui.mjs';
 
 function rl() {
   return createInterface({ input: process.stdin, output: process.stdout });
+}
+
+function readKeys(onKey) {
+  const input = process.stdin;
+  const wasRaw = Boolean(input.isRaw);
+  const wasFlowing = input.readableFlowing === true;
+  // Keep readline's decoder off stdin so it cannot consume later text prompts.
+  const keys = new PassThrough();
+  emitKeypressEvents(keys);
+  keys.on('keypress', onKey);
+  const onData = chunk => keys.write(chunk);
+  input.on('data', onData);
+  if (!wasRaw) input.setRawMode(true);
+  input.resume();
+
+  return () => {
+    input.removeListener('data', onData);
+    keys.removeListener('keypress', onKey);
+    keys.destroy();
+    if (!wasRaw) input.setRawMode(false);
+    if (wasFlowing) input.resume();
+    else input.pause();
+  };
 }
 
 export async function text(message, defaultVal) {
@@ -48,37 +72,27 @@ export async function confirm(message, defaultVal = true) {
 
     render();
 
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
-    process.stdin.setEncoding('utf8');
-
-    const onData = (key) => {
-      if (key === '\x1b[D' || key === '\x1b[C' || key === '\t') {
+    const stop = readKeys((character, key) => {
+      if (key.name === 'left' || key.name === 'right' || key.name === 'tab') {
         selected = !selected;
         render();
-      } else if (key === 'y' || key === 'Y') {
+      } else if (character === 'y' || character === 'Y') {
         selected = true;
         render();
-      } else if (key === 'n' || key === 'N') {
+      } else if (character === 'n' || character === 'N') {
         selected = false;
         render();
-      } else if (key === '\r' || key === '\n') {
-        process.stdin.setRawMode(false);
-        process.stdin.pause();
-        process.stdin.removeListener('data', onData);
+      } else if (key.name === 'return' || key.name === 'enter') {
+        stop();
         render(true);
         process.stdout.write('\n');
         resolve(selected);
-      } else if (key === '\x03') {
-        process.stdin.setRawMode(false);
-        process.stdin.pause();
-        process.stdin.removeListener('data', onData);
+      } else if (key.ctrl && key.name === 'c') {
+        stop();
         process.stdout.write('\n');
         process.exit(0);
       }
-    };
-
-    process.stdin.on('data', onData);
+    });
   });
 }
 
@@ -109,36 +123,26 @@ export async function select(message, choices, { output = process.stdout, initia
     output.write(`${color.cyan('?')} ${message}\n`);
     render();
 
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
-    process.stdin.setEncoding('utf8');
-
-    const onData = (key) => {
-      if (key === '\x1b[A') {
+    const stop = readKeys((character, key) => {
+      if (key.name === 'up') {
         selected = (selected - 1 + choices.length) % choices.length;
         render();
-      } else if (key === '\x1b[B') {
+      } else if (key.name === 'down') {
         selected = (selected + 1) % choices.length;
         render();
-      } else if (key === '\r' || key === '\n') {
-        process.stdin.setRawMode(false);
-        process.stdin.pause();
-        process.stdin.removeListener('data', onData);
+      } else if (key.name === 'return' || key.name === 'enter') {
+        stop();
         const choice = choices[selected];
         const value = typeof choice === 'string' ? choice : choice.value;
         if (cursor.enabled) {
           output.write(`${cursor.up(choices.length + 1)}\r${cursor.clearLine}${color.green(sym.check)} ${message} ${color.dim(sym.dots)} ${color.cyan(value)}\n${cursor.clearDown}`);
         }
         resolve(value);
-      } else if (key === '\x03') {
-        process.stdin.setRawMode(false);
-        process.stdin.pause();
-        process.stdin.removeListener('data', onData);
+      } else if (key.ctrl && key.name === 'c') {
+        stop();
         output.write('\n');
         resolve(null);
       }
-    };
-
-    process.stdin.on('data', onData);
+    });
   });
 }

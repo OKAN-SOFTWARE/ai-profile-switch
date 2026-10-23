@@ -74,5 +74,5 @@ function claude {
   __claude_switch_launch $selected @args
 }
 
-function cpf { __claude_switch_cli shell use @args }
+function cpf { __claude_switch_cli manage @args }
 function claude-pick { __claude_switch_cli shell pick }

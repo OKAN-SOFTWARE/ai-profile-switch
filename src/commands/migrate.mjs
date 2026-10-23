@@ -14,7 +14,7 @@ export async function migrate(profileName, argv = []) {
   });
   const meta = readMeta();
   if (meta.profiles.length === 0) {
-    throw new Error('No profiles found. Run claude-account-switch init first.');
+    throw new Error('No profiles found. Run npx claude-account-switch@latest init first.');
   }
   if (positionals.length > 1) throw new Error('Usage: claude-account-switch migrate [profile] --from <path>');
   let target = positionals[0] || (profileName && !profileName.startsWith('-') ? profileName : undefined);

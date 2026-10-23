@@ -74,7 +74,7 @@ describe('profile operations', () => {
     assert.equal(profileExists('work'), false);
     assert.deepEqual(listProfiles(), ['personal']);
     assert.equal(readMeta().activeProfile, 'personal');
-    assert.doesNotThrow(() => removeProfile('missing'));
+    assert.throws(() => removeProfile('missing'), /not registered/);
   });
 
   it('rejects invalid profile names before creating files', () => {
