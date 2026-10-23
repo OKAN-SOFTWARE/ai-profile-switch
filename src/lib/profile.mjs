@@ -312,6 +312,16 @@ function prepareMigration(source, profileName, shareSettings, stage) {
     : [[stagedProfile, target]];
 }
 
+// Windows and WSL1 refuse to move a folder while a running session keeps a file in it open.
+function moveAside(destination, backup) {
+  try {
+    renameSync(destination, backup);
+  } catch (err) {
+    if (!['EPERM', 'EACCES', 'EBUSY'].includes(err.code)) throw err;
+    throw new Error(`Migration destination is in use: ${destination}. Close Claude sessions using the source and destination, then retry.`, { cause: err });
+  }
+}
+
 export function migrateDir(sourceDir, profileName, shareSettings = true) {
   const error = validateProfileName(profileName);
   if (error) throw new Error(error);
@@ -354,7 +364,7 @@ export function migrateDir(sourceDir, profileName, shareSettings = true) {
     for (const [staged, destination] of entries) {
       const backup = join(stage, `backup-${published.length}`);
       const hadOriginal = pathExists(destination);
-      if (hadOriginal) renameSync(destination, backup);
+      if (hadOriginal) moveAside(destination, backup);
       published.push({ destination, backup, hadOriginal });
       if (hadOriginal && migrationFingerprint(backup) !== fingerprints.get(destination)) {
         throw new Error(`Migration destination changed before replacement: ${destination}. Close Claude sessions using the source and destination, then retry.`);
