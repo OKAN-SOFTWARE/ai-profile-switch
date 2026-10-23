@@ -5,21 +5,67 @@ description: 프로필 관리, 충돌 없는 이관과 2 버전 호환 안내.
 
 # 명령어·이관
 
-npx를 쓰면 아래 명령 앞에 `npx claude-account-switch@latest`를 붙입니다. 글로벌 설치는 `claude-account-switch`를 사용합니다.
+이 문서는 저장소 소스 기준입니다. 관리 메뉴와 이름 변경은 이 소스 또는 해당 기능이 포함된 배포 버전이 필요하며, 현재 npm 배포본에는 없을 수 있습니다. 이 소스를 사용하려면 저장소 루트에서 `node bin/cli.mjs install-shell`을 실행하고 새 터미널을 엽니다.
 
-| 명령 | 동작 |
+## cpf로 프로필 관리하기
+
+`cpf`를 실행하면 관리 메뉴가 열립니다. 조회·전환·추가·이름 변경·삭제·종료를 ↑/↓와 Enter로 선택합니다. 프로필 관리만으로 Claude가 실행되지는 않습니다. 세션을 시작하려면 `claude`를 실행합니다.
+
+| 바로 쓸 수 있는 명령 | 동작 |
 | --- | --- |
-| `init` | 처음에는 설정 마법사, 이미 프로필이 있으면 읽기만 하는 요약 |
-| `add <name>` | 새 프로필 생성 |
-| `remove <name>` | 확인 후 프로필 삭제 |
-| `list` | 프로필과 활성 상태 조회 |
-| `use <name>` | 활성 프로필 변경 |
-| `migrate [name] --from <path>` | 기존 설정 복사; 대상 생략 시 선택 |
-| `install-shell` | 감지한 셸과 로컬 실행 파일 설치·복구·갱신 |
-| `update [--check]` | 로컬 실행 파일 갱신 또는 설치 없는 확인 |
-| `mcp [list]` | 과거 MCP 설정 경로·서버 이름 조회 |
+| `cpf` | 관리 메뉴 열기 |
+| `cpf work` | Claude 실행 없이 `work`를 활성 프로필로 지정 |
+| `cpf --list` | 프로필과 활성 상태 조회 |
+| `cpf add work2` | `work2` 추가; 다음 `claude`에서 고른 뒤 로그인 |
+| `cpf rename wrok2 work2` | `wrok2`를 `work2`로 이름 변경 |
+| `cpf remove work2` | 확인 후 `work2` 삭제 |
+| `cpf --help` | 명령어 사용법 확인 |
+
+예시의 이름은 본인의 프로필 이름으로 바꿉니다. 인자가 하나이면 항상 프로필 이름으로 해석합니다. `cpf add`, `cpf rename`, `cpf remove`, `cpf list`는 각각 그 이름의 프로필로 전환합니다. `list`라는 프로필과 충돌하지 않도록 목록 조회는 `cpf --list`를 사용합니다. 메뉴는 대화형 터미널이 필요하므로 스크립트에서는 동작을 지정한 명령을 사용합니다.
+
+프로필 생성만으로 로그인되거나 활성 프로필이 바뀌지는 않습니다. 계정을 추가하려면:
+
+```bash
+cpf add work2
+claude
+```
+
+`work2`를 고르고 Claude가 로그인을 요청하면 사용할 계정으로 로그인합니다. 프로필 전환은 이후 실행에 적용되며, 이미 실행 중인 Claude 세션은 기존 프로필을 유지합니다.
+
+## 프로필 이름 바꾸기
+
+해당 프로필을 사용하는 Claude 세션을 모두 종료한 뒤 오타를 고칩니다.
+
+```bash
+cpf rename wrok2 work2
+```
+
+대화 기록·설정·목록 순서·활성 상태를 보존합니다. 바꿀 이름이 이미 있으면 중단합니다. 설정 경로가 바뀌므로 macOS에서는 다시 로그인해야 할 수 있습니다. 이름을 바꾼 뒤 새 세션을 실행하세요.
 
 이름은 소문자·숫자·하이픈, 최대 30자이며 시작과 끝은 문자·숫자여야 합니다. `_shared`, `default`는 예약 이름입니다.
+
+## 전체 CLI
+
+아래 예시는 저장소 루트에서 소스를 직접 실행합니다. 배포 버전은 `node bin/cli.mjs`를 `npx claude-account-switch@latest`로 바꿉니다. 글로벌 설치를 했다면 `claude-account-switch`를 사용할 수 있습니다.
+
+| 바로 쓸 수 있는 명령 | 동작 |
+| --- | --- |
+| `node bin/cli.mjs manage` | `cpf`와 같은 관리 메뉴 열기 |
+| `node bin/cli.mjs manage --list` | 관리 명령으로 프로필 조회 |
+| `node bin/cli.mjs init` | 첫 설정 마법사; 이미 프로필이 있으면 요약 |
+| `node bin/cli.mjs add work2` | 프로필 추가 |
+| `node bin/cli.mjs rename wrok2 work2` | 프로필 이름 변경 |
+| `node bin/cli.mjs remove work2` | 확인 후 프로필 삭제 |
+| `node bin/cli.mjs list` | 프로필과 활성 상태 조회 |
+| `node bin/cli.mjs use work` | 활성 프로필 변경 |
+| `node bin/cli.mjs migrate work --from ~/.claude` | 기존 프로필로 설정 복사 |
+| `node bin/cli.mjs install-shell` | 셸 명령어·로컬 실행 파일 설치·복구·갱신 |
+| `node bin/cli.mjs update --check` | 배포된 새 버전을 설치 없이 확인 |
+| `node bin/cli.mjs update` | 로컬 실행 파일 갱신 |
+| `node bin/cli.mjs mcp list` | 과거 MCP 설정 경로·서버 이름 조회 |
+| `node bin/cli.mjs rename --help` | 파일 변경 없이 도움말 확인 |
+
+`manage`는 `cpf`와 같은 인자를 받습니다(예: `node bin/cli.mjs manage rename wrok2 work2`). 모든 명령에 `--help`를 붙이면 동작을 실행하지 않고 도움말을 보여줍니다. 지원하지 않는 옵션과 추가 인자는 변경 전에 오류로 종료합니다. `claude --help`는 계속 Claude Code 자체 도움말입니다.
 
 ## 기존 설정 가져오기
 
