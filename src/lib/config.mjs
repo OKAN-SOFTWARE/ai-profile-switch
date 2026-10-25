@@ -1,4 +1,6 @@
-import { META_FILE, PROFILE_NAME_REGEX, PROFILE_NAME_MAX_LENGTH, RESERVED_NAMES } from './constants.mjs';
+import {
+  META_FILE, PROFILE_NAME_REGEX, PROFILE_NAME_MAX_LENGTH, RESERVED_NAMES, SHAREABLE_ENTRIES,
+} from './constants.mjs';
 import { readJsonFile, writeJsonFile } from './json-fs.mjs';
 
 const DEFAULT_META = {
@@ -16,7 +18,10 @@ export function readMeta() {
       || RESERVED_NAMES.includes(name))
     || new Set(meta.profiles).size !== meta.profiles.length
     || (meta.activeProfile !== null && !meta.profiles.includes(meta.activeProfile))
-    || typeof meta.shareSettings !== 'boolean') {
+    || typeof meta.shareSettings !== 'boolean'
+    || (meta.shared !== undefined && (!Array.isArray(meta.shared)
+      || meta.shared.some(entry => !SHAREABLE_ENTRIES.includes(entry))
+      || new Set(meta.shared).size !== meta.shared.length))) {
     throw new Error(`Invalid profile metadata in ${META_FILE}. Restore it before continuing.`);
   }
   return meta;
@@ -45,6 +50,15 @@ export function addProfileToMeta(name) {
     meta.profiles.push(name);
   }
   writeMeta(meta);
+}
+
+export function getSharedEntries() {
+  return readMeta().shared ?? [];
+}
+
+export function setSharedEntries(entries) {
+  const meta = readMeta();
+  writeMeta({ ...meta, shared: entries });
 }
 
 export function removeProfileFromMeta(name) {

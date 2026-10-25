@@ -15,6 +15,7 @@ const COMMANDS = {
   manage: args => import('./commands/manage.mjs').then(m => m.manage(args)),
   'install-shell': () => import('./commands/install-shell.mjs').then(m => m.installShell()),
   migrate: args => import('./commands/migrate.mjs').then(m => m.migrate(undefined, args)),
+  share: args => import('./commands/share.mjs').then(m => m.share(args)),
   mcp: args => import('./commands/mcp/index.mjs').then(m => m.mcp(args)),
   update: args => import('./commands/update.mjs').then(m => m.update(args)),
   shell: args => import('./commands/shell.mjs').then(m => m.shell(args)),
@@ -30,6 +31,7 @@ const USAGE = {
   manage: 'manage [profile | add <name> | rename <old-name> <new-name> | remove <name> | --list]',
   'install-shell': 'install-shell',
   migrate: 'migrate [profile] [--from <path>]',
+  share: 'share [list | add <entry> | remove <entry> | sync]',
   mcp: 'mcp [list]',
   update: 'update [--check] [--self] [--claude-code] [--yes]',
   shell: 'shell <launch|use|pick|refresh>',
@@ -67,6 +69,7 @@ function showHelp(command) {
     install-shell          Install or repair shell integration
     migrate [name]         Import existing settings (--from <path>)
     update [--check]        Update this tool; --check only checks
+    share [add|remove]     Share CLAUDE.md, skills, agents, … across profiles
     mcp [list]             Show legacy MCP migration guidance
 
   Run any command with --help for its usage.

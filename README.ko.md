@@ -88,6 +88,27 @@ cpf rename wrok2 work2
 
 대화 기록·설정·목록 순서·활성 상태를 보존합니다. `work2`가 이미 있으면 중단합니다. 설정 경로가 바뀌므로 macOS에서는 다시 로그인해야 할 수 있습니다. 이름을 바꾼 뒤 새 Claude 세션을 실행하세요.
 
+## 같이 쓸 것과 따로 쓸 것
+
+기본으로는 `settings.json`과 `commands`만 모든 프로필이 함께 씁니다. 나머지는 프로필마다 따로입니다. 함께 쓰고 싶은 항목은 `cpf share add`로 추가합니다.
+
+```bash
+cpf share                  # 무엇을 같이 쓰는지, 프로필별로 맞는지 보기
+cpf share add CLAUDE.md    # 지금 프로필의 CLAUDE.md를 모든 프로필이 같이 씀
+cpf share add skills       # 개인 스킬을 하나씩 같이 씀
+cpf share remove skills    # 그만 같이 씀 — 각 프로필에 복사본이 남음
+cpf share sync             # _shared에 새로 넣은 항목을 지금 바로 연결
+```
+
+| 같이 쓸 수 있는 것 | 늘 프로필마다 따로 |
+| --- | --- |
+| `CLAUDE.md` `keybindings.json` `skills` `agents` `rules` `hooks` `output-styles` `workflows` `themes` | 로그인·`.claude.json`(MCP 서버·프로젝트 신뢰), 대화 기록, `projects`, 플러그인, `skills/synced`(계정에서 내려온 스킬) |
+
+- 같이 쓰는 원본은 `~/.claude-profiles/_shared/<항목>`에 있고, 각 프로필에는 링크가 놓입니다. `_shared/CLAUDE.md`를 다른 파일로 가는 링크로 바꿔도 됩니다.
+- 처음 추가할 때 `_shared`에 없으면 지금 프로필의 내용을 복사해 옵니다.
+- `claude`로 실행할 때와 새 프로필을 만들 때 링크를 다시 맞춥니다. 내용이 다른 파일이 이미 있으면 지우지 않고 경고만 합니다. 옮기거나 지운 뒤 `cpf share sync`를 실행하세요.
+- `skillOverrides`·`enabledMcpjsonServers` 같은 설정은 공유 `settings.json`에 넣으면 모든 프로필에 적용됩니다. MCP 서버 등록과 로그인은 프로필마다 `claude mcp add`·`/mcp`로 합니다.
+
 ## 기존 사용자
 
 이 저장소의 변경을 사용하려면 **저장소 루트에서** 다음 명령을 실행하고 새 터미널을 엽니다.
@@ -128,6 +149,7 @@ npx claude-account-switch@latest install-shell
 | `node bin/cli.mjs install-shell` | 셸 명령어·로컬 실행 파일 설치·복구·갱신 |
 | `node bin/cli.mjs update --check` | 배포된 새 버전을 설치 없이 확인 |
 | `node bin/cli.mjs update` | 로컬 실행 파일 갱신 |
+| `node bin/cli.mjs share add skills` | 개인 스킬을 모든 프로필이 같이 씀 |
 | `node bin/cli.mjs mcp list` | 과거 MCP 이름과 전환 안내 조회 |
 | `node bin/cli.mjs rename --help` | 파일 변경 없이 해당 명령의 도움말 확인 |
 
