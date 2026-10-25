@@ -9,7 +9,8 @@ import {
   PROFILE_NAME_REGEX, PROFILE_NAME_MAX_LENGTH, RESERVED_NAMES,
   SHARED_FILES, SHARED_DIRS, PROFILE_FILES, PROFILE_DIRS,
 } from './constants.mjs';
-import { addProfileToMeta, removeProfileFromMeta, readMeta } from './config.mjs';
+import { createHash } from 'node:crypto';
+import { addProfileToMeta, removeProfileFromMeta, readMeta, writeMeta } from './config.mjs';
 import { warn } from './ui.mjs';
 
 function pathExists(path) {
@@ -82,10 +83,56 @@ export function createProfile(name, shareSettings = true) {
   addProfileToMeta(name);
 }
 
-export function removeProfile(name) {
+export function assertRegisteredProfile(name) {
+  const error = validateProfileName(name);
+  if (error) throw new Error(error);
+  const meta = readMeta();
+  if (!meta.profiles.includes(name)) throw new Error(`Profile "${name}" is not registered`);
   const dir = profileDir(name);
-  if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+  if (!pathExists(dir)) throw new Error(`Profile "${name}" directory is missing`);
+  const entry = lstatSync(dir);
+  if (entry.isSymbolicLink() || !entry.isDirectory()) {
+    throw new Error(`Profile "${name}" must be a directory, not a symbolic link or file`);
+  }
+  return meta;
+}
+
+export function removeProfile(name) {
+  assertRegisteredProfile(name);
+  rmSync(profileDir(name), { recursive: true, force: true });
   removeProfileFromMeta(name);
+}
+
+export function renameProfile(oldName, newName) {
+  const meta = assertRegisteredProfile(oldName);
+  const error = validateProfileName(newName);
+  if (error) throw new Error(error);
+  if (oldName === newName) return false;
+  const oldDir = profileDir(oldName);
+  const newDir = profileDir(newName);
+  if (meta.profiles.includes(newName) || pathExists(newDir)) {
+    throw new Error(`Profile "${newName}" already exists`);
+  }
+
+  renameSync(oldDir, newDir);
+  try {
+    writeMeta({
+      ...meta,
+      profiles: meta.profiles.map(name => name === oldName ? newName : name),
+      activeProfile: meta.activeProfile === oldName ? newName : meta.activeProfile,
+    });
+  } catch (err) {
+    try {
+      if (pathExists(oldDir)) throw new Error(`Original path is now occupied: ${oldDir}`);
+      renameSync(newDir, oldDir);
+    } catch (rollbackError) {
+      throw new Error(`Profile rename rollback failed. Profile data is preserved at ${newDir}. Restore it to ${oldDir} before continuing.`, {
+        cause: new AggregateError([err, rollbackError]),
+      });
+    }
+    throw err;
+  }
+  return true;
 }
 
 export function listProfiles() {
@@ -183,6 +230,29 @@ function stageEntry(source, destination) {
   copyEntry(source, destination);
 }
 
+function migrationFingerprint(path) {
+  const hash = createHash('sha256');
+  const visit = current => {
+    const entry = lstatSync(current);
+    hash.update(JSON.stringify([
+      relative(path, current), entry.mode, entry.dev, entry.ino, entry.mtimeMs,
+      // Moving the root into a backup changes its ctime without changing its data.
+      current === path ? null : entry.ctimeMs,
+    ]));
+    if (entry.isSymbolicLink()) hash.update(readlinkSync(current));
+    else if (entry.isDirectory()) {
+      for (const name of readdirSync(current).sort()) visit(join(current, name));
+    } else if (entry.isFile()) hash.update(readFileSync(current));
+  };
+  try {
+    visit(path);
+    return hash.digest('hex');
+  } catch (err) {
+    if (err.code === 'ENOENT' || err.code === 'ENOTDIR') return null;
+    throw err;
+  }
+}
+
 function prepareMigration(source, profileName, shareSettings, stage) {
   const target = profileDir(profileName);
   const stagedProfile = join(stage, 'profile');
@@ -242,6 +312,16 @@ function prepareMigration(source, profileName, shareSettings, stage) {
     : [[stagedProfile, target]];
 }
 
+// Windows and WSL1 refuse to move a folder while a running session keeps a file in it open.
+function moveAside(destination, backup) {
+  try {
+    renameSync(destination, backup);
+  } catch (err) {
+    if (!['EPERM', 'EACCES', 'EBUSY'].includes(err.code)) throw err;
+    throw new Error(`Migration destination is in use: ${destination}. Close Claude sessions using the source and destination, then retry.`, { cause: err });
+  }
+}
+
 export function migrateDir(sourceDir, profileName, shareSettings = true) {
   const error = validateProfileName(profileName);
   if (error) throw new Error(error);
@@ -260,20 +340,40 @@ export function migrateDir(sourceDir, profileName, shareSettings = true) {
       throw new Error(`Migration source and target overlap: ${source.directory} and ${path}`);
     }
   }
+  const originals = [profileDir(profileName), ...(shareSettings ? [SHARED_DIR] : [])];
+  const fingerprints = new Map(originals.map(path => [path, migrationFingerprint(path)]));
   mkdirSync(PROFILES_DIR, { recursive: true });
   const stage = mkdtempSync(join(PROFILES_DIR, '.migration-'));
+  chmodSync(stage, 0o700);
   const published = [];
   let cleanup = true;
   try {
     const entries = prepareMigration(source, profileName, shareSettings, stage);
+    const backups = entries.flatMap(([, destination], index) => pathExists(destination)
+      ? [{ original: destination, backup: join(stage, `backup-${index}`) }] : []);
+    if (backups.length) {
+      writeFileSync(join(stage, 'backup-info.json'), JSON.stringify({
+        profile: profileName, source: source.directory, backups,
+      }, null, 2) + '\n', { mode: 0o600 });
+    }
+    for (const destination of originals) {
+      if (migrationFingerprint(destination) !== fingerprints.get(destination)) {
+        throw new Error(`Migration destination changed while preparing: ${destination}. Close Claude sessions using the source and destination, then retry.`);
+      }
+    }
     for (const [staged, destination] of entries) {
       const backup = join(stage, `backup-${published.length}`);
       const hadOriginal = pathExists(destination);
-      if (hadOriginal) renameSync(destination, backup);
+      if (hadOriginal) moveAside(destination, backup);
       published.push({ destination, backup, hadOriginal });
+      if (hadOriginal && migrationFingerprint(backup) !== fingerprints.get(destination)) {
+        throw new Error(`Migration destination changed before replacement: ${destination}. Close Claude sessions using the source and destination, then retry.`);
+      }
       renameSync(staged, destination);
     }
     addProfileToMeta(profileName);
+    if (backups.length) cleanup = false;
+    return { backupPath: backups.length ? stage : null };
   } catch (err) {
     const rollbackErrors = [];
     for (const { destination, backup, hadOriginal } of published.reverse()) {

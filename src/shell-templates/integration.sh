@@ -30,7 +30,7 @@ claude() {
 }
 
 cpf() {
-  __claude_switch_cli shell use "$@"
+  __claude_switch_cli manage "$@"
 }
 
 claude-pick() {

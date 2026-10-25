@@ -9,5 +9,5 @@ export async function installShell() {
   const shells = [...newlyInstalled, ...alreadyInstalled];
   success('Local shell runtime installed.');
   if (shells.length) success(`Shell integration ready (${shells.join(', ')})`);
-  info('Open a new terminal. Use claude, cpf <name>, or claude-pick.');
+  info('Open a new terminal. Run claude to launch or cpf to manage profiles.');
 }

@@ -42,6 +42,17 @@ function installPowerShellFixture(fixtureHome, options = {}) {
   return JSON.parse(result);
 }
 
+function installShellFixture(fixtureHome, shell, { all = false, env = {} } = {}) {
+  const code = `Object.defineProperty(process, 'platform', { value: 'linux' });
+    const integration = await import(${JSON.stringify(shellModule)});
+    console.log(JSON.stringify(integration.${all ? 'installAllShells()' : `installShellIntegration(${JSON.stringify(shell)})`} ?? null));`;
+  return JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', code], {
+    encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 10000,
+    env: { ...process.env, HOME: fixtureHome, USERPROFILE: fixtureHome,
+      XDG_CONFIG_HOME: join(fixtureHome, '.config'), ...env },
+  }));
+}
+
 function assertProfileAppend(fixtureHome, original, decode) {
   const profile = powerShellProfile(fixtureHome, 'WindowsPowerShell');
   mkdirSync(dirname(profile), { recursive: true });
@@ -141,7 +152,7 @@ describe('shell installation', () => {
   });
 
   it('routes fish and PowerShell to their existing config locations', () => {
-    const fishConfig = join(home, '.config', 'fish', 'config.fish');
+    const fishConfig = join(process.env.XDG_CONFIG_HOME || join(home, '.config'), 'fish', 'config.fish');
     const ps5 = powerShellProfile(home, 'WindowsPowerShell');
     mkdirSync(join(home, 'Documents', 'WindowsPowerShell'), { recursive: true });
     writeFileSync(ps5, '# user configuration\n');
@@ -151,6 +162,72 @@ describe('shell installation', () => {
     assert.match(readFileSync(ps5, 'utf8'), /user configuration/);
     assert.match(readFileSync(ps5, 'utf8'), /\.shell-integration.ps1/);
   });
+
+  it('detects and installs zsh at ZDOTDIR without changing HOME/.zshrc', () => {
+    const fixtureHome = mkdtempSync(join(home, 'zsh-zdotdir-'));
+    const config = join(fixtureHome, 'custom-zsh');
+    mkdirSync(config);
+    writeFileSync(join(config, '.zshrc'), '# existing custom zsh configuration\n');
+    mkdirSync(join(fixtureHome, '.claude-profiles'));
+    const result = installShellFixture(fixtureHome, 'zsh', {
+      all: true, env: { SHELL: '/bin/bash', ZDOTDIR: config },
+    });
+    assert.ok(result.newlyInstalled.includes('zsh'));
+    const first = readFileSync(join(config, '.zshrc'), 'utf8');
+    assert.match(first, /\.shell-integration.sh/);
+    assert.equal(existsSync(join(fixtureHome, '.zshrc')), false);
+    installShellFixture(fixtureHome, 'zsh', { env: { ZDOTDIR: config } });
+    assert.equal(readFileSync(join(config, '.zshrc'), 'utf8'), first);
+  });
+
+  it('detects and installs fish at XDG_CONFIG_HOME', () => {
+    const fixtureHome = mkdtempSync(join(home, 'fish-xdg-'));
+    const config = join(fixtureHome, 'custom-config');
+    mkdirSync(join(config, 'fish'), { recursive: true });
+    writeFileSync(join(config, 'fish', 'config.fish'), '# existing fish configuration\n');
+    mkdirSync(join(fixtureHome, '.claude-profiles'));
+    const result = installShellFixture(fixtureHome, 'fish', {
+      all: true, env: { SHELL: '/bin/bash', XDG_CONFIG_HOME: config },
+    });
+    assert.ok(result.newlyInstalled.includes('fish'));
+    const installed = readFileSync(join(config, 'fish', 'config.fish'), 'utf8');
+    assert.match(installed, /source ~\/\.claude-profiles\/\.shell-integration.fish/);
+    assert.equal(existsSync(join(fixtureHome, '.config', 'fish')), false);
+  });
+
+  for (const shell of ['bash', 'zsh', 'fish', 'powershell']) {
+    it(`repairs ${shell} when its integration appears only in a comment`, () => {
+      const fixtureHome = mkdtempSync(join(home, `commented-${shell}-`));
+      const extension = shell === 'fish' ? 'fish' : shell === 'powershell' ? 'ps1' : 'sh';
+      const config = shell === 'fish' ? join(fixtureHome, '.config', 'fish', 'config.fish')
+        : shell === 'powershell' ? join(fixtureHome, '.config', 'powershell', 'Microsoft.PowerShell_profile.ps1')
+        : join(fixtureHome, shell === 'zsh' ? '.zshrc' : '.bashrc');
+      mkdirSync(dirname(config), { recursive: true });
+      const original = `# source ~/.claude-profiles/.shell-integration.${extension}\n`;
+      writeFileSync(config, original);
+      installShellFixture(fixtureHome, shell);
+      const first = readFileSync(config, 'utf8');
+      assert.ok(first.startsWith(original));
+      assert.match(first.slice(original.length), /(?:source|\.)[ \t]+.*\.shell-integration/);
+      installShellFixture(fixtureHome, shell);
+      assert.equal(readFileSync(config, 'utf8'), first);
+    });
+  }
+
+  for (const original of [
+    'echo ".shell-integration.sh"\n',
+    'echo "Example: ; source ~/.claude-profiles/.shell-integration.sh"\n',
+    'echo ready # ; source ~/.claude-profiles/.shell-integration.sh\n',
+    'source ~/.claude-profiles/.shell-integration.sh.backup\n',
+  ]) {
+    it(`does not mistake a mention or different source file for active integration: ${original.trim()}`, () => {
+      const fixtureHome = mkdtempSync(join(home, 'echo-marker-'));
+      const rc = join(fixtureHome, '.bashrc');
+      writeFileSync(rc, original);
+      installShellFixture(fixtureHome, 'bash');
+      assert.match(readFileSync(rc, 'utf8').slice(original.length), /\.shell-integration.sh/);
+    });
+  }
 
   it('rejects unknown shells before changing config', () => {
     const rc = readFileSync(join(home, '.bashrc'), 'utf8');

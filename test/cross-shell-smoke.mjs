@@ -195,6 +195,16 @@ export function runCrossShellSmoke({ repo = repository, shell, psMode = 'Default
       assert.equal(JSON.parse(readFileSync(join(fixture.profilesDir, 'meta.json'), 'utf8')).activeProfile, 'personal');
       checks.push('profile-switch');
       if (!cmd) {
+        for (const command of ['cpf add temporary', 'cpf rename temporary renamed', 'cpf --list']) {
+          const result = run(source + command + ending);
+          assert.equal(result.status, 0, result.stderr || String(result.error));
+        }
+        const managed = JSON.parse(readFileSync(join(fixture.profilesDir, 'meta.json'), 'utf8'));
+        assert.deepEqual(managed.profiles, ['work', 'personal', 'renamed']);
+        assert.equal(managed.activeProfile, 'personal');
+        assert.ok(existsSync(join(fixture.profilesDir, 'renamed')));
+        assert.ok(!existsSync(join(fixture.profilesDir, 'temporary')));
+        checks.push('cpf-add/rename/list');
         const extension = powerShell ? 'ps1' : kind === 'fish' ? 'fish' : 'sh';
         const hook = join(fixture.profilesDir, 'personal', `pre-launch.${extension}`);
         writeFileSync(hook, powerShell ? "$env:CAS_HOOK='profile value'\n" : kind === 'fish' ? "set -gx CAS_HOOK 'profile value'\n" : "CAS_HOOK='profile value'\n");

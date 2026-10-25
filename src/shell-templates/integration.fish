@@ -24,7 +24,7 @@ function claude
 end
 
 function cpf
-  __claude_switch_cli shell use $argv
+  __claude_switch_cli manage $argv
 end
 
 function claude-pick

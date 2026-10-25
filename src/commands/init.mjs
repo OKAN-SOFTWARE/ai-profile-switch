@@ -26,8 +26,8 @@ export async function init() {
     warn('claude-account-switch is already initialized.');
     console.log(`  Profiles: ${current.profiles.join(', ')}`);
     console.log(`  Active: ${current.activeProfile || 'none'}`);
-    console.log(`  Add an account: ${color.cyan('claude-account-switch add <name>')}`);
-    console.log(`  Repair shell integration: ${color.cyan('claude-account-switch install-shell')}`);
+    console.log(`  Add an account: ${color.cyan('cpf add <name>')}`);
+    console.log(`  Repair shell integration: ${color.cyan('npx claude-account-switch@latest install-shell')}`);
     return;
   }
 
@@ -37,6 +37,7 @@ export async function init() {
     'Multi-account manager for Claude Code',
   ]));
   console.log();
+  warn('Close Claude sessions using the configuration you will import. Keep source and destination sessions closed until migration finishes.');
   const count = await prompt.number('How many profiles do you want to set up?', 2);
   console.log();
   const names = [];
@@ -69,8 +70,9 @@ export async function init() {
     if (profileExists(name)) throw new Error(`Profile directory "${name}" already exists. Choose another name.`);
   }
   if (migration) {
-    migrateDir(migration.source, migration.target, shareSettings);
+    const { backupPath } = migrateDir(migration.source, migration.target, shareSettings);
     success(`Copied ${migration.source} → profile: ${migration.target}`);
+    if (backupPath) warn(`Previous destination data backup: ${backupPath}`);
   }
   for (const name of names) {
     if (migration?.target !== name) createProfile(name, shareSettings);

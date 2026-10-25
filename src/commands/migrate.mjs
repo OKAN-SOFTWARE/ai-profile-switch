@@ -14,7 +14,7 @@ export async function migrate(profileName, argv = []) {
   });
   const meta = readMeta();
   if (meta.profiles.length === 0) {
-    throw new Error('No profiles found. Run claude-account-switch init first.');
+    throw new Error('No profiles found. Run npx claude-account-switch@latest init first.');
   }
   if (positionals.length > 1) throw new Error('Usage: claude-account-switch migrate [profile] --from <path>');
   let target = positionals[0] || (profileName && !profileName.startsWith('-') ? profileName : undefined);
@@ -41,13 +41,15 @@ export async function migrate(profileName, argv = []) {
   console.log(`  Source : ${color.cyan(source)}`);
   console.log(`  Profile: ${color.cyan(target)}`);
   console.log('  Existing conflicting data will stop migration. The source will be preserved.');
+  warn('Close Claude sessions using the source or destination before continuing. Keep them closed until migration finishes.');
   const confirmed = await prompt.confirm(`Copy configuration into "${target}"?`, true);
   if (!confirmed) {
     console.log('  Cancelled.');
     return;
   }
-  migrateDir(source, target, meta.shareSettings !== false);
+  const { backupPath } = migrateDir(source, target, meta.shareSettings !== false);
   success(`Copied ${source} → profile: ${target}`);
+  if (backupPath) warn(`Previous destination data backup: ${backupPath}`);
   warn('Original configuration was preserved. macOS Keychain credentials are not copied.');
   console.log('  Claude will check authentication when you launch this profile.');
   console.log();

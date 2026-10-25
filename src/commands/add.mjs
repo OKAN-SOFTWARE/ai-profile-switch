@@ -1,26 +1,16 @@
-import { color, success, error } from '../lib/ui.mjs';
+import { color, success } from '../lib/ui.mjs';
 import { createProfile, validateProfileName, profileExists } from '../lib/profile.mjs';
 import { readMeta } from '../lib/config.mjs';
 
 export async function add(name) {
-  if (!name) {
-    error('Usage: claude-account-switch add <name>');
-    process.exit(1);
-  }
-
   const err = validateProfileName(name);
-  if (err) {
-    error(err);
-    process.exit(1);
-  }
-
-  if (profileExists(name)) {
-    error(`Profile "${name}" already exists`);
-    process.exit(1);
-  }
-
+  if (err) throw new Error(err);
   const meta = readMeta();
+  if (profileExists(name) || meta.profiles.includes(name)) {
+    throw new Error(`Profile "${name}" already exists`);
+  }
   createProfile(name, meta.shareSettings !== false);
   success(`Created profile: ${name}`);
-  console.log(`  Run ${color.cyan(`claude-account-switch use ${name}`)} to activate it`);
+  console.log(`  Run ${color.cyan('claude')}, choose ${color.cyan(name)}, and sign in to the intended account.`);
+  console.log(`  To switch without launching: ${color.cyan(`cpf ${name}`)}`);
 }

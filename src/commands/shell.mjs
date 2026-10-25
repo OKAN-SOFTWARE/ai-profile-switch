@@ -5,7 +5,7 @@ import { join, delimiter } from 'node:path';
 import { getActiveProfile, setActiveProfile } from '../lib/config.mjs';
 import { HOME, IS_WINDOWS } from '../lib/constants.mjs';
 import { installAllShells } from '../lib/shell.mjs';
-import { listProfiles, profileDir, profileExists } from '../lib/profile.mjs';
+import { listProfiles, profileDir, assertRegisteredProfile } from '../lib/profile.mjs';
 import { success } from '../lib/ui.mjs';
 import * as prompt from '../lib/prompt.mjs';
 import { scheduleSelfUpdate } from '../lib/self-update.mjs';
@@ -48,7 +48,7 @@ async function launch(args, selected) {
     process.exitCode = 130;
     return;
   }
-  if (!listProfiles().includes(profile) || !profileExists(profile)) throw new Error(`Profile "${profile}" not found`);
+  assertRegisteredProfile(profile);
   const bin = resolveClaudeBinary();
   if (!bin) {
     console.error('Claude Code executable not found. See https://code.claude.com/docs/en/setup');
@@ -88,7 +88,7 @@ async function launch(args, selected) {
 }
 
 function useProfile(name) {
-  if (!listProfiles().includes(name) || !profileExists(name)) throw new Error(`Profile "${name}" not found`);
+  assertRegisteredProfile(name);
   if (getActiveProfile() !== name) setActiveProfile(name);
   success(`Switched to profile: ${name}`);
 }
@@ -106,12 +106,12 @@ async function pickProfile(printOnly) {
 
 async function selectProfile() {
   const profiles = listProfiles();
-  if (!profiles.length) throw new Error('No profiles found. Run: npx claude-account-switch init');
+  if (!profiles.length) throw new Error('No profiles found. Run cpf to add one, or npx claude-account-switch@latest init to import existing Claude settings.');
   const active = getActiveProfile();
   const selected = !process.stdin.isTTY || profiles.length === 1
     ? (active ?? profiles[0])
     : await prompt.select('Select a profile:', profiles, { output: process.stderr, initial: profiles.indexOf(active) });
-  if (selected && !profileExists(selected)) throw new Error(`Profile "${selected}" not found`);
+  if (selected) assertRegisteredProfile(selected);
   return selected;
 }
 
