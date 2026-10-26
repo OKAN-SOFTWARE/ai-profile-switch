@@ -4,13 +4,15 @@ export default {
 
   'prompt.keys': '{arrows} move · Enter select · Esc cancel',
   'prompt.keysNumbered': '{arrows} move · 1-{max} pick · Enter select · Esc cancel',
+  'prompt.keysBack': '{arrows} move · Enter select · Esc back',
+  'prompt.keysNumberedBack': '{arrows} move · 1-{max} pick · Enter select · Esc back',
   'prompt.cancelled': 'cancelled',
   'prompt.yes': 'Yes',
   'prompt.no': 'No',
   'common.cancelled': 'Cancelled.',
   'common.none': 'none',
 
-  'picker.question': 'Which account do you want to use?',
+  'picker.question': 'Which profile do you want to use?',
   'picker.inUse': 'in use',
   'picker.starting': 'Starting with {profile}',
   'picker.switched': 'Now using {profile}',
@@ -23,6 +25,7 @@ export default {
   'account.fiveHour': '5-hour',
   'account.weekly': 'Weekly',
   'account.noUsage': 'No usage saved yet',
+  'account.savedAt': 'as of {time}',
   'account.notSignedIn': 'Not signed in yet',
 
   'profile.empty': 'Profile name cannot be empty',
@@ -45,13 +48,13 @@ export default {
 
   'use.switched': 'Switched to profile: {profile}',
   'use.already': '"{profile}" is already the active profile',
-  'use.note': 'New Claude launches use it. Running sessions keep their account.',
+  'use.note': 'New Claude launches use it. Running sessions keep their profile.',
 
   'add.created': 'Created profile: {name}',
   'add.next': 'Next',
   'add.step1': 'Run {command}',
   'add.step2': 'Pick {name} from the list',
-  'add.step3': 'Sign in with the account you want to use',
+  'add.step3': 'Sign in with the Claude account you want to use',
 
   'remove.activeWarn': '"{name}" is the active profile',
   'remove.confirm': 'Delete profile "{name}"? Its sign-in and history are deleted and cannot be restored',
@@ -59,8 +62,8 @@ export default {
   'remove.newActive': 'Active profile is now {name}',
   'remove.none': 'No profiles left.',
 
-  'rename.closeSessions': 'Close Claude sessions using "{name}" first. Open sessions keep using the old folder.',
-  'rename.macSignIn': 'macOS may ask you to sign in again.',
+  'rename.closeSessions': 'Close Claude windows using {name} first. Open windows keep using the old folder.',
+  'rename.macSignIn': 'macOS may ask you to sign in once more.',
   'rename.done': 'Renamed profile: {old} → {new}',
   'rename.same': '"{name}" already has that name',
 
@@ -123,10 +126,10 @@ export default {
   'init.already': 'ai-profile-switch is already initialized.',
   'init.profiles': 'Profiles:',
   'init.active': 'Active:',
-  'init.addHint': 'Add an account:',
+  'init.addHint': 'Add a profile:',
   'init.repairHint': 'Repair the shell commands:',
   'init.title': 'Get started with ai-profile-switch',
-  'init.tagline': 'Use several Claude accounts on one computer',
+  'init.tagline': 'Keep several Claude accounts on one computer as profiles',
   'init.closeSessions': 'Keep Claude windows closed while your current settings are copied.',
   'init.names': 'Profile names, separated by commas',
   'init.duplicate': '"{name}" is listed twice',
@@ -144,21 +147,49 @@ export default {
 
   'menu.question': 'What do you want to do?',
   'menu.current': 'Current: {name}',
-  'menu.use': 'Switch account',
-  'menu.list': 'See all accounts',
-  'menu.add': 'Add an account',
-  'menu.rename': 'Rename an account',
-  'menu.remove': 'Delete an account',
+  'menu.use': 'Switch profile',
+  'menu.add': 'Add a profile',
   'menu.removeHint': 'asks first',
   'menu.share': 'Shared settings',
   'menu.language': 'Language',
   'menu.exit': 'Exit',
+  'menu.manage': 'Manage profiles',
+  'menu.manageHint': 'rename, sign-in, delete',
+  'menu.usePick': 'Which profile do you want to switch to?',
+  'menu.managePick': 'Which profile do you want to manage?',
+  'detail.title': '{name} profile',
+  'detail.account': 'Signed in',
+  'detail.usage': 'Usage',
+  'detail.lastUsed': 'Last used',
+  'detail.folder': 'Folder',
+  'detail.never': 'not yet',
+  'detail.noUsage': 'none saved yet',
+  'detail.use': 'Use this profile',
+  'detail.rename': 'Rename',
+  'detail.login': 'Change sign-in',
+  'detail.loginHint': 'sign in with another Claude account',
+  'detail.remove': 'Delete',
+  'detail.back': 'Back',
+  'rename.newName': 'New name',
+  'rename.newNameHint': 'now: {name} · empty to cancel',
+  'rename.confirm': 'Rename {old} to {new}?',
+  'rename.kept': 'Sign-in, history, and settings are kept.',
+  'rename.next': 'Next time, pick {name} in the {command} list.',
+  'hint.otherName': 'Use another name:',
+  'login.current': 'Signed in now:',
+  'login.onlyThis': 'Only this profile changes; other profiles stay signed in.',
+  'login.browser': 'When the browser opens, sign in with the Claude account you want.',
+  'login.closeSessions': 'Close Claude windows using {name} first.',
+  'login.confirm': 'Change the sign-in for {name}?',
+  'login.opening': 'Opening Claude Code sign-in… (claude auth login)',
+  'login.done': '{name} is now signed in as {account}',
+  'login.same': '{name} is still signed in as {account}',
+  'login.notSaved': 'Could not read the new sign-in. Start {name} with claude to check.',
+  'login.failed': 'Sign-in did not finish (exit code {code}).',
+  'login.usageLater': 'Usage shows again after you use Claude with this profile.',
+  'login.usage': 'Usage: cpf login <name>',
+  'index.helpLogin': 'Runs claude auth login for that profile only. Other profiles stay signed in.',
   'menu.addName': 'New profile name (empty to cancel):',
-  'menu.choose': 'Choose a profile:',
-  'menu.active': '(active)',
-  'menu.renameWarn': 'Close running sessions for this profile before continuing. macOS may ask you to sign in again.',
-  'menu.newName': 'New name (empty to cancel):',
-  'menu.renameConfirm': 'Rename "{old}" to "{new}"?',
   'manage.invalid': 'Invalid arguments. Run cpf --help for usage.',
   'manage.help': `Usage:
   cpf                         Open the menu
@@ -167,6 +198,7 @@ export default {
   cpf add <name>              Create a profile
   cpf rename <old> <new>      Rename a profile, keeping its data
   cpf remove <name>           Delete a profile after confirmation
+  cpf login <name>            Sign a profile in to another Claude account
   cpf share                   Show what every profile shares
   cpf share add <entry>       Share CLAUDE.md, skills, agents, … across profiles
   cpf share remove <entry>    Stop sharing; each profile keeps a copy
@@ -205,7 +237,7 @@ Without the shell commands, use: npx ai-profile-switch@latest manage [arguments]
   {title} — Use several Claude Code accounts on one computer
 
   Everyday commands (in your terminal, after setup):
-    claude                     Pick an account and start Claude Code
+    claude                     Pick a profile and start Claude Code
     cpf                        Open the menu
     cpf work                   Switch to an existing profile
     cpf --help                 Show the short commands
@@ -217,6 +249,7 @@ Without the shell commands, use: npx ai-profile-switch@latest manage [arguments]
     add <name>                 Create a profile
     remove <name>              Remove a profile after confirmation
     rename <old> <new>         Rename a profile, keeping its data
+    login <name>               Sign a profile in to another Claude account
     list                       List profiles
     use <name>                 Change the active profile
     manage                     Open the same menu as cpf

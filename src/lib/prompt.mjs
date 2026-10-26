@@ -1,6 +1,6 @@
 import { createInterface, emitKeypressEvents } from 'node:readline';
 import { PassThrough } from 'node:stream';
-import { color, cursorControl, sym } from './ui.mjs';
+import { color, cursorControl, displayWidth, sym } from './ui.mjs';
 import { t } from './i18n.mjs';
 
 function rl() {
@@ -30,8 +30,9 @@ function readKeys(onKey) {
   };
 }
 
-export async function text(message, defaultVal) {
-  const suffix = defaultVal !== undefined ? color.dim(` (${defaultVal})`) : '';
+// hint is shown only while asking, such as "now: side · empty to cancel".
+export async function text(message, defaultVal, hint) {
+  const suffix = hint ? `  ${color.dim(hint)}` : defaultVal !== undefined ? color.dim(` (${defaultVal})`) : '';
   const r = rl();
   const cursor = cursorControl();
   return new Promise((resolve) => {
@@ -40,7 +41,7 @@ export async function text(message, defaultVal) {
       const result = answer.trim() || defaultVal || '';
       // Replace 2-line prompt with single completed line: ◇ message … answer
       if (cursor.enabled) {
-        process.stdout.write(`${cursor.up(2)}\r${cursor.clearLine}${color.green(sym.stepDone)}  ${message} ${color.dim(sym.dots)} ${color.cyan(result)}\n${cursor.clearDown}`);
+        process.stdout.write(`${cursor.up(2)}\r${cursor.clearLine}${color.green(sym.stepDone)}  ${message} ${color.dim(sym.dots)} ${result ? color.cyan(result) : color.dim(t('prompt.cancelled'))}\n${cursor.clearDown}`);
       }
       resolve(result);
     });
@@ -101,7 +102,10 @@ export async function confirm(message, defaultVal = true) {
 
 // Choices are strings or { label, value, hint, details }. hint sits after the label,
 // details are extra dim lines under it. numbered adds 1-9 keys that pick at once.
-export async function select(message, choices, { output = process.stdout, initial = 0, numbered = false, done } = {}) {
+// body lines sit between the question and the choices; back says Esc goes back.
+export async function select(message, choices, {
+  output = process.stdout, initial = 0, numbered = false, done, body = [], back = false,
+} = {}) {
   const items = choices.map(choice => (typeof choice === 'string' ? { label: choice, value: choice } : choice));
   return new Promise((resolve) => {
     let selected = Math.max(0, Math.min(initial, items.length - 1));
@@ -110,8 +114,8 @@ export async function select(message, choices, { output = process.stdout, initia
     const rail = color.dim(sym.rail);
     const indent = ' '.repeat(numbered ? 5 : 2);
     const keys = numbered && items.length > 1 && items.length <= 9
-      ? t('prompt.keysNumbered', { arrows: sym.arrows, max: items.length })
-      : t('prompt.keys', { arrows: sym.arrows });
+      ? t(back ? 'prompt.keysNumberedBack' : 'prompt.keysNumbered', { arrows: sym.arrows, max: items.length })
+      : t(back ? 'prompt.keysBack' : 'prompt.keys', { arrows: sym.arrows });
 
     const rows = () => {
       const lines = [];
@@ -128,17 +132,22 @@ export async function select(message, choices, { output = process.stdout, initia
       return lines;
     };
 
+    // A line wider than the window wraps, so count the screen rows it really takes.
+    const screenRows = lines => lines.reduce((sum, line) => sum
+      + Math.max(1, Math.ceil(displayWidth(line) / (output.columns || Infinity))), 0);
+    const header = [`${color.cyan(sym.step)}  ${message}`, ...body.map(line => `${rail}  ${line}`)];
+
     const render = () => {
       if (height) output.write(cursor.up(height));
       const lines = rows();
       for (const line of lines) output.write(`${cursor.clearLine}${line}\n`);
-      height = lines.length;
+      height = screenRows(lines);
     };
 
     const finish = (value, summary) => {
       stop();
       if (cursor.enabled) {
-        output.write(`${cursor.up(height + 1)}\r${cursor.clearLine}${summary}\n${cursor.clearDown}`);
+        output.write(`${cursor.up(height + screenRows(header))}\r${cursor.clearLine}${summary}\n${cursor.clearDown}`);
       }
       resolve(value);
     };
@@ -155,7 +164,7 @@ export async function select(message, choices, { output = process.stdout, initia
       return;
     }
 
-    output.write(`${color.cyan(sym.step)}  ${message}\n`);
+    for (const line of header) output.write(`${line}\n`);
     render();
 
     const stop = readKeys((character, key) => {

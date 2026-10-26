@@ -1,13 +1,19 @@
-import { info, success, warn } from '../lib/ui.mjs';
-import { renameProfile } from '../lib/profile.mjs';
+import { color, info, success, warn } from '../lib/ui.mjs';
+import { checkRename, renameProfile } from '../lib/profile.mjs';
 import { t } from '../lib/i18n.mjs';
 
-export async function rename(oldName, newName) {
+// warned: the caller already asked to close sessions, so do not say it twice.
+export async function rename(oldName, newName, { warned = false } = {}) {
   if (!oldName || !newName) throw new Error('Usage: cpf rename <old-name> <new-name>');
-  if (oldName !== newName) {
-    warn(t('rename.closeSessions', { name: oldName }));
-    if (process.platform === 'darwin') warn(t('rename.macSignIn'));
+  checkRename(oldName, newName);
+  if (oldName === newName) {
+    info(t('rename.same', { name: oldName }));
+    return;
   }
-  if (renameProfile(oldName, newName)) success(t('rename.done', { old: oldName, new: newName }));
-  else info(t('rename.same', { name: oldName }));
+  if (!warned) warn(t('rename.closeSessions', { name: oldName }));
+  renameProfile(oldName, newName);
+  success(t('rename.done', { old: oldName, new: color.bold(newName) }));
+  const kept = process.platform === 'darwin' ? `${t('rename.kept')} ${t('rename.macSignIn')}` : t('rename.kept');
+  console.log(`    ${color.dim(kept)}`);
+  console.log(`    ${t('rename.next', { command: color.cyan('claude'), name: color.bold(newName) })}`);
 }

@@ -11,6 +11,7 @@ const COMMANDS = {
   add: args => import('./commands/add.mjs').then(m => m.add(args[0])),
   remove: args => import('./commands/remove.mjs').then(m => m.remove(args[0])),
   rename: args => import('./commands/rename.mjs').then(m => m.rename(...args)),
+  login: args => import('./commands/login.mjs').then(m => m.login(args[0])),
   list: () => import('./commands/list.mjs').then(m => m.list()),
   use: args => import('./commands/use.mjs').then(m => m.use(args[0])),
   manage: args => import('./commands/manage.mjs').then(m => m.manage(args)),
@@ -28,6 +29,7 @@ const USAGE = {
   add: 'add <name>',
   remove: 'remove <name>',
   rename: 'rename <old-name> <new-name>',
+  login: 'login <name>',
   list: 'list',
   use: 'use <name>',
   manage: 'manage [profile | add <name> | rename <old-name> <new-name> | remove <name> | --list]',
@@ -39,9 +41,9 @@ const USAGE = {
   update: 'update [--check] [--self] [--claude-code] [--yes]',
   shell: 'shell <launch|use|pick|refresh>',
 };
-const POSITIONAL_COUNTS = { init: 0, add: 1, remove: 1, rename: 2, list: 0, use: 1, 'install-shell': 0 };
+const POSITIONAL_COUNTS = { init: 0, add: 1, remove: 1, rename: 2, login: 1, list: 0, use: 1, 'install-shell': 0 };
 
-const COMMAND_NOTES = { rename: 'index.helpRename', remove: 'index.helpRemove', add: 'index.helpAdd', use: 'index.helpUse' };
+const COMMAND_NOTES = { login: 'index.helpLogin', rename: 'index.helpRename', remove: 'index.helpRemove', add: 'index.helpAdd', use: 'index.helpUse' };
 
 function showHelp(command) {
   if (command) {

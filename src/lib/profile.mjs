@@ -105,16 +105,25 @@ export function removeProfile(name) {
   removeProfileFromMeta(name);
 }
 
-export function renameProfile(oldName, newName) {
+// Checks a rename without changing anything, so callers can warn only when it can go ahead.
+export function checkRename(oldName, newName) {
   const meta = assertRegisteredProfile(oldName);
   const error = validateProfileName(newName);
   if (error) throw new Error(error);
+  if (oldName !== newName && (meta.profiles.includes(newName) || pathExists(profileDir(newName)))) {
+    throw userError(t('profile.exists', { name: newName }), [
+      { label: t('hint.profiles'), text: meta.profiles.join(', ') },
+      { label: t('hint.otherName'), command: `cpf rename ${oldName} ${newName}-2` },
+    ]);
+  }
+  return meta;
+}
+
+export function renameProfile(oldName, newName) {
+  const meta = checkRename(oldName, newName);
   if (oldName === newName) return false;
   const oldDir = profileDir(oldName);
   const newDir = profileDir(newName);
-  if (meta.profiles.includes(newName) || pathExists(newDir)) {
-    throw new Error(t('profile.exists', { name: newName }));
-  }
 
   renameSync(oldDir, newDir);
   try {

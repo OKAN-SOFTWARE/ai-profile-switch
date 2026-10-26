@@ -111,17 +111,23 @@ async function pickProfile(printOnly) {
   if (printOnly) process.stdout.write(profile + '\n');
 }
 
-function accountSummary({ email, plan }) {
+export function accountSummary({ email, plan }) {
   return [email, plan].filter(Boolean).join(' · ');
 }
 
-function usageLine({ usage }) {
+export function usageLine({ usage }) {
   if (!usage) return color.dim(t('account.noUsage'));
   const parts = [];
   if (usage.fiveHour !== null) parts.push(`${t('account.fiveHour')} ${meter(usage.fiveHour)}`);
   if (usage.weekly !== null) parts.push(`${t('account.weekly')} ${meter(usage.weekly)}`);
-  if (usage.savedAt) parts.push(color.dim(relativeTime(usage.savedAt)));
+  if (usage.savedAt) parts.push(color.dim(t('account.savedAt', { time: relativeTime(usage.savedAt) })));
   return parts.join('   ');
+}
+
+// One picker row per profile: name, in use or last used, then account and usage lines.
+export function profileChoices(profiles, active) {
+  const width = Math.max(...profiles.map(name => name.length));
+  return profiles.map(name => profileChoice(name, active, width));
 }
 
 function profileChoice(name, active, width) {
@@ -156,8 +162,7 @@ async function selectProfile({ launching = false } = {}) {
     }
     return selected;
   }
-  const width = Math.max(...profiles.map(name => name.length));
-  const choices = profiles.map(name => profileChoice(name, active, width));
+  const choices = profileChoices(profiles, active);
   intro('ai-profile-switch', '', output);
   const selected = await prompt.select(t('picker.question'), choices, {
     output, initial: profiles.indexOf(active), numbered: true,
@@ -171,6 +176,9 @@ async function selectProfile({ launching = false } = {}) {
   if (selected) assertRegisteredProfile(selected);
   return selected;
 }
+
+// Declared below; the Windows resolver test runs that part on its own.
+export { resolveClaudeBinary };
 
 function executable(file) {
   try {

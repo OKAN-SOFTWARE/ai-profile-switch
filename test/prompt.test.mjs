@@ -13,7 +13,7 @@ const shellURL = new URL('../src/commands/shell.mjs', import.meta.url).href;
 // stream chunks. No fixture invokes Claude or touches the user's profile data.
 function runPicker({ keys = ['\x1b[B', '\r'], stdinTTY = true, stdoutTTY = false, outputTTY = true,
   noColor = false, term = 'xterm-256color', shell = false, initial = 0,
-  raw = false, flowing = false, confirm = false, defaultOutput = false, sequence = false, accounts = {}, status = 0 } = {}) {
+  raw = false, flowing = false, confirm = false, defaultOutput = false, sequence = false, accounts = {}, status = 0, columns = 0 } = {}) {
   const env = { ...process.env, TERM: term };
   delete env.FORCE_COLOR;
   if (noColor) env.NO_COLOR = '1';
@@ -84,6 +84,7 @@ function runPicker({ keys = ['\x1b[B', '\r'], stdinTTY = true, stdoutTTY = false
     Object.defineProperty(process, 'stdin', { value: input });
     Object.defineProperty(process.stdout, 'isTTY', { value: ${stdoutTTY} });
     Object.defineProperty(process.stderr, 'isTTY', { value: ${outputTTY} });
+    ${columns ? `Object.defineProperty(process.stderr, 'columns', { value: ${columns} });` : ''}
     const listeners = input.listeners('data');
     const keyListeners = input.listeners('keypress');
     const encoding = input.readableEncoding;
@@ -120,6 +121,13 @@ describe('profile picker terminal output', () => {
     assertRedraw(result.stderr);
   });
 
+  it('counts wrapped lines when it redraws a narrow window', () => {
+    // At 20 columns the key help line takes two rows, so the menu is 7 rows tall.
+    const result = runPicker({ columns: 20 });
+    assert.ok(result.stderr.includes('\x1b[7A'), 'arrow navigation must go back over the wrapped row too');
+    assert.ok(result.stderr.includes('\x1b[8A'), 'Enter must return to the heading above the wrapped rows');
+  });
+
   it('keeps cursor control enabled with NO_COLOR', () => {
     const result = runPicker({ stdoutTTY: true, noColor: true });
     assertRedraw(result.stderr);
@@ -143,7 +151,7 @@ describe('profile picker terminal output', () => {
     // stdout is captured by the shell, so color follows the terminal on stderr.
     assert.match(result.stderr, /\x1b\[36m/);
     const text = result.stderr.replace(/\x1b\[[0-9;]*m/g, '');
-    assert.match(text, /Which account do you want to use\?/);
+    assert.match(text, /Which profile do you want to use\?/);
     assert.match(text, /Not signed in yet/);
     assert.match(text, /Starting with personal/);
     assert.match(text, /Opening Claude Code/);

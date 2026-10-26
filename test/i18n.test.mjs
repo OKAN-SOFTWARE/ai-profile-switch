@@ -28,7 +28,7 @@ describe('messages', () => {
     assert.equal(t('use.switched', { profile: 'work' }), 'Switched to profile: work');
     assert.equal(t('use.switched'), 'Switched to profile: {profile}');
     setLanguage('ko');
-    assert.equal(t('use.switched', { profile: 'work' }), 'work 계정으로 바꿨어요');
+    assert.equal(t('use.switched', { profile: 'work' }), 'work 프로필로 바꿨어요');
     assert.throws(() => t('no.such.key'), /Missing message/);
   });
 
