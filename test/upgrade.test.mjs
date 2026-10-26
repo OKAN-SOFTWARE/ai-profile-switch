@@ -11,6 +11,8 @@ import { PROFILES_DIR } from '../src/lib/constants.mjs';
 import { runSelfUpdate, installedRuntimeDirectory, scheduleSelfUpdate } from '../src/lib/self-update.mjs';
 
 const repository = dirname(dirname(fileURLToPath(import.meta.url)));
+const current = JSON.parse(readFileSync(join(repository, 'package.json'), 'utf8')).version;
+const later = n => current.replace(/\d+$/, patch => Number(patch) + n);
 const workspace = mkdtempSync(join(process.env.TMPDIR, 'upgrade-'));
 const legacyDirectory = join(workspace, 'legacy');
 let server;
@@ -37,7 +39,7 @@ async function verifiedRelease() {
   assert.equal(JSON.parse(readFileSync(join(legacyDirectory, 'package/package.json'), 'utf8')).version, '1.2.3');
 }
 
-function packCandidate(version = '2.0.1', engines = undefined) {
+function packCandidate(version = later(1), engines = undefined) {
   const source = join(workspace, 'candidate');
   rmSync(source, { recursive: true, force: true });
   const packageDirectory = join(source, 'package');
@@ -117,15 +119,15 @@ describe('published 1.2.3 upgrade and real npm downloads', () => {
     const oldRuntime = installedRuntimeDirectory();
     const oldBytes = snapshot(oldRuntime);
     const result = await runSelfUpdate({ force: true, env: { ...process.env, CAS_TEST_REGISTRY_URL: registry }, computePlan: async () => ({ self: { latest: manifest.version } }) });
-    assert.deepEqual(result, { action: 'updated', version: '2.0.1' });
-    assert.equal(cli(join(PROFILES_DIR, '_runtime/bin/cli.mjs'), ['--version']).trim(), '2.0.1');
+    assert.deepEqual(result, { action: 'updated', version: later(1) });
+    assert.equal(cli(join(PROFILES_DIR, '_runtime/bin/cli.mjs'), ['--version']).trim(), later(1));
     assert.deepEqual(snapshot(oldRuntime), oldBytes);
     assert.deepEqual(snapshot(join(PROFILES_DIR, 'work')), profileBefore);
     assert.ok(requests.includes('/candidate.tgz'));
     assert.equal(requests.includes('/lifecycle-trap'), false);
   });
   it('verifies npm package integrity and retains the active version after a corrupt download', async () => {
-    packCandidate('2.0.2');
+    packCandidate(later(2));
     corrupt = true;
     const old = installedRuntimeDirectory();
     const before = snapshot(old);
@@ -134,11 +136,11 @@ describe('published 1.2.3 upgrade and real npm downloads', () => {
     assert.match(result.error, corrupt ? /EINTEGRITY/ : /EBADENGINE/);
     assert.equal(installedRuntimeDirectory(), old);
     assert.deepEqual(snapshot(old), before);
-    assert.equal(cli(join(PROFILES_DIR, '_runtime/bin/cli.mjs'), ['--version']).trim(), '2.0.1');
+    assert.equal(cli(join(PROFILES_DIR, '_runtime/bin/cli.mjs'), ['--version']).trim(), later(1));
     corrupt = false;
   });
   it('rejects packages that require an unsupported Node version', async () => {
-    packCandidate('2.0.3', { node: '>=999.0.0' });
+    packCandidate(later(3), { node: '>=999.0.0' });
     const old = installedRuntimeDirectory();
     const result = await runSelfUpdate({ force: true, env: { ...process.env, CAS_TEST_REGISTRY_URL: registry }, computePlan: async () => ({ self: { latest: manifest.version } }) });
     assert.equal(result.action, 'failed');
@@ -146,7 +148,7 @@ describe('published 1.2.3 upgrade and real npm downloads', () => {
     assert.equal(installedRuntimeDirectory(), old);
   });
   it('manual update and check report the installed runtime and do not rerun init', async () => {
-    packCandidate('2.0.4');
+    packCandidate(later(4));
     const env = { ...process.env, CAS_TEST_REGISTRY_URL: registry };
     const run = args => new Promise((resolve, reject) => {
       const child = spawn(process.execPath, [join(repository, 'bin/cli.mjs'), ...args], { env, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -158,16 +160,16 @@ describe('published 1.2.3 upgrade and real npm downloads', () => {
     });
     const check = await run(['update', '--check']);
     assert.equal(check.code, 1, check.output);
-    assert.match(check.output, /2\.0\.1/);
-    assert.equal(cli(join(PROFILES_DIR, '_runtime/bin/cli.mjs'), ['--version']).trim(), '2.0.1');
+    assert.ok(check.output.includes(later(1)), check.output);
+    assert.equal(cli(join(PROFILES_DIR, '_runtime/bin/cli.mjs'), ['--version']).trim(), later(1));
     const update = await run(['update']);
     assert.equal(update.code, 0, update.output);
-    assert.match(update.output, /Updated to 2\.0\.4/);
-    assert.equal(cli(join(PROFILES_DIR, '_runtime/bin/cli.mjs'), ['--version']).trim(), '2.0.4');
+    assert.ok(update.output.includes(`Updated to ${later(4)}`), update.output);
+    assert.equal(cli(join(PROFILES_DIR, '_runtime/bin/cli.mjs'), ['--version']).trim(), later(4));
     assert.equal(existsSync(join(PROFILES_DIR, 'work/.credentials.json')), true);
   });
   it('automatically downloads in a detached worker and switches the next launch', async () => {
-    packCandidate('2.0.5');
+    packCandidate(later(5));
     rmSync(join(PROFILES_DIR, '_update-state.json'));
     const result = scheduleSelfUpdate({ env: { ...process.env, CLAUDE_SWITCH_DISABLE_AUTO_UPDATE: '0', CAS_TEST_REGISTRY_URL: registry }, stdin: { isTTY: true }, stdout: { isTTY: true } });
     assert.equal(result.action, 'scheduled');
@@ -175,11 +177,11 @@ describe('published 1.2.3 upgrade and real npm downloads', () => {
     let installed = '';
     while (Date.now() < deadline) {
       installed = JSON.parse(readFileSync(join(installedRuntimeDirectory(), 'package.json'), 'utf8')).version;
-      if (installed === '2.0.5') break;
+      if (installed === later(5)) break;
       await new Promise(resolve => setTimeout(resolve, 100));
     }
-    assert.equal(installed, '2.0.5');
-    assert.equal(cli(join(PROFILES_DIR, '_runtime/bin/cli.mjs'), ['--version']).trim(), '2.0.5');
+    assert.equal(installed, later(5));
+    assert.equal(cli(join(PROFILES_DIR, '_runtime/bin/cli.mjs'), ['--version']).trim(), later(5));
     assert.equal(requests.includes('/lifecycle-trap'), false);
   });
   it('keeps an already running process able to load its original modules after activation', async () => {
@@ -194,13 +196,13 @@ describe('published 1.2.3 upgrade and real npm downloads', () => {
     const finished = new Promise((resolve, reject) => { child.once('error', reject); child.once('close', resolve); });
     try {
       await new Promise((resolve, reject) => { child.once('message', resolve); child.once('error', reject); });
-      packCandidate('2.0.6');
+      packCandidate(later(6));
       assert.equal((await runSelfUpdate({ force: true, env: { ...process.env, CAS_TEST_REGISTRY_URL: registry }, computePlan: async () => ({ self: { latest: manifest.version } }) })).action, 'updated');
       assert.deepEqual(snapshot(old), original);
       child.send('load-old-module');
       assert.equal(await finished, 0, errors);
-      assert.equal(output.trim(), '2.0.5');
-      assert.equal(cli(join(PROFILES_DIR, '_runtime/bin/cli.mjs'), ['--version']).trim(), '2.0.6');
+      assert.equal(output.trim(), later(5));
+      assert.equal(cli(join(PROFILES_DIR, '_runtime/bin/cli.mjs'), ['--version']).trim(), later(6));
     } finally { if (child.exitCode === null) child.kill(); }
   });
 });

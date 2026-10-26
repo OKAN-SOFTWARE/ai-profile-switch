@@ -10,9 +10,11 @@ import { installedRuntimeDirectory, shouldCheckSelfUpdate, scheduleSelfUpdate, r
 import { installShellIntegration } from '../src/lib/shell.mjs';
 
 const repository = dirname(dirname(fileURLToPath(import.meta.url)));
+const current = JSON.parse(readFileSync(join(repository, 'package.json'), 'utf8')).version;
+const next = current.replace(/\d+$/, patch => Number(patch) + 1);
 const pointer = join(PROFILES_DIR, '_runtime-current.json');
 const stateFile = join(PROFILES_DIR, '_update-state.json');
-const computePlan = async () => ({ self: { latest: '2.0.1', hasUpdate: true } });
+const computePlan = async () => ({ self: { latest: next, hasUpdate: true } });
 const interactive = { env: {}, stdin: { isTTY: true }, stdout: { isTTY: true } };
 
 function fixtureDownload(edit = () => {}) {
@@ -73,13 +75,13 @@ describe('automatic immutable runtime updates', () => {
     mkdirSync(dirname(hook));
     writeFileSync(hook, 'custom harness');
     const result = await runSelfUpdate({ computePlan, download: fixtureDownload() });
-    assert.deepEqual(result, { action: 'updated', version: '2.0.1' });
+    assert.deepEqual(result, { action: 'updated', version: next });
     assert.notEqual(installedRuntimeDirectory(), old);
     assert.deepEqual(readFileSync(join(old, 'src/index.mjs')), original);
     assert.deepEqual(readFileSync(rc), rcBefore);
     assert.equal(readFileSync(meta, 'utf8'), 'existing profile metadata');
     assert.equal(readFileSync(hook, 'utf8'), 'custom harness');
-    assert.equal(execFileSync(process.execPath, [join(old, 'bin/cli.mjs'), '--version'], { env: process.env, encoding: 'utf8' }).trim(), '2.0.1');
+    assert.equal(execFileSync(process.execPath, [join(old, 'bin/cli.mjs'), '--version'], { env: process.env, encoding: 'utf8' }).trim(), next);
     assert.equal(scheduleSelfUpdate(interactive).reason, 'recent');
     assert.equal(readdirSync(PROFILES_DIR).some(name => name.startsWith('_update-stage-')), false);
   });
@@ -109,7 +111,7 @@ describe('automatic immutable runtime updates', () => {
     while (!finish) await new Promise(resolve => setTimeout(resolve, 1));
     const second = await runSelfUpdate({ force: true, computePlan, download: () => assert.fail('duplicate download') });
     assert.equal(second.reason, 'busy');
-    assert.equal(execFileSync(process.execPath, [join(PROFILES_DIR, '_runtime/bin/cli.mjs'), '--version'], { env: process.env, encoding: 'utf8' }).trim(), '2.0.0');
+    assert.equal(execFileSync(process.execPath, [join(PROFILES_DIR, '_runtime/bin/cli.mjs'), '--version'], { env: process.env, encoding: 'utf8' }).trim(), current);
     await finish();
     assert.equal((await first).action, 'updated');
   });
@@ -181,6 +183,6 @@ describe('automatic immutable runtime updates', () => {
     };
     const result = await runSelfUpdate({ computePlan, download });
     assert.equal(result.action, 'failed');
-    assert.equal(execFileSync(process.execPath, [join(PROFILES_DIR, '_runtime/bin/cli.mjs'), '--version'], { env: process.env, encoding: 'utf8' }).trim(), '2.0.0');
+    assert.equal(execFileSync(process.execPath, [join(PROFILES_DIR, '_runtime/bin/cli.mjs'), '--version'], { env: process.env, encoding: 'utf8' }).trim(), current);
   });
 });
