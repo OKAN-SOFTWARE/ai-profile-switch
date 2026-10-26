@@ -21,6 +21,7 @@ Choose list, switch, add, rename, remove, or exit with ↑/↓ and Enter. The me
 | `cpf add work2` | Create `work2`; select it on the next `claude` launch and sign in |
 | `cpf rename wrok2 work2` | Rename `wrok2` to `work2` |
 | `cpf remove work2` | Delete `work2` after confirmation |
+| `cpf login work2` | Sign `work2` in to another Claude account with `claude auth login` |
 | `cpf language ko` | Show screens in Korean; `en` for English, `auto` to follow the system |
 | `cpf --help` | Show command usage |
 

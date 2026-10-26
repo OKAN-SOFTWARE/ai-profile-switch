@@ -28,12 +28,13 @@ Run these at the terminal prompt. If you are in the Claude chat, enter `/exit` f
 | Command | What it does |
 | --- | --- |
 | `claude` | Pick an account and start Claude Code with it |
-| `cpf` | Open a menu to switch, add, rename, or remove profiles |
+| `cpf` | Open a menu to switch or add profiles. **Manage profiles** shows each one's sign-in and usage, and renames, re-signs, or deletes it |
 | `cpf work` | Make `work` active without starting Claude |
 | `cpf --list` | Show profiles and the active one |
 | `cpf add work2` | Create a profile. Then run `claude`, pick it, and sign in |
 | `cpf rename wrok2 work2` | Rename a profile. Close its Claude sessions first |
 | `cpf remove work2` | Delete a profile after confirmation |
+| `cpf login work2` | Sign `work2` in to another Claude account. Other profiles keep theirs |
 | `cpf language ko` | Show screens in Korean. `en` for English, `auto` to follow the system |
 
 - The `claude` picker shows each profile's email, plan, and the 5-hour and weekly usage Claude Code last saved. Press a number to pick at once, or Esc to cancel.

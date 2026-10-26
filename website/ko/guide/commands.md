@@ -21,6 +21,7 @@ description: 프로필 관리, 충돌 없는 이관과 2 버전 호환 안내.
 | `cpf add work2` | `work2` 추가; 다음 `claude`에서 고른 뒤 로그인 |
 | `cpf rename wrok2 work2` | `wrok2`를 `work2`로 이름 변경 |
 | `cpf remove work2` | 확인 후 `work2` 삭제 |
+| `cpf login work2` | `claude auth login` 으로 `work2` 만 다른 Claude 계정에 다시 로그인 |
 | `cpf language ko` | 화면을 한국어로; `en` 은 영어, `auto` 는 시스템 설정을 따름 |
 | `cpf --help` | 명령어 사용법 확인 |
 

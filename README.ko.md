@@ -28,12 +28,13 @@ npx ai-profile-switch@latest init
 | 명령 | 하는 일 |
 | --- | --- |
 | `claude` | 계정을 골라 그 계정으로 Claude Code 실행 |
-| `cpf` | 메뉴에서 프로필 전환·추가·이름 변경·삭제 |
+| `cpf` | 메뉴에서 프로필 바꾸기·추가. **프로필 관리하기**에서 프로필마다 로그인 계정·사용량을 보고 이름 바꾸기·다시 로그인·지우기 |
 | `cpf work` | Claude 를 켜지 않고 `work` 로 전환 |
 | `cpf --list` | 프로필 목록과 지금 쓰는 프로필 |
 | `cpf add work2` | 프로필 만들기. 그다음 `claude` 에서 골라 로그인 |
 | `cpf rename wrok2 work2` | 이름 바꾸기. 그 프로필의 Claude 세션을 먼저 닫음 |
 | `cpf remove work2` | 확인 후 프로필 삭제 |
+| `cpf login work2` | `work2` 만 다른 Claude 계정으로 다시 로그인. 다른 프로필은 그대로 |
 | `cpf language ko` | 화면을 한국어로. `en` 은 영어, `auto` 는 시스템 설정을 따름 |
 
 - `claude` 선택 화면에는 프로필마다 이메일·요금제와, Claude Code 가 마지막으로 저장한 5시간·주간 사용량이 나옵니다. 숫자 키로 바로 고르고 Esc 로 취소합니다.
