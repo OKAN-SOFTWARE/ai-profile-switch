@@ -122,8 +122,9 @@ describe('profile picker terminal output', () => {
   });
 
   it('counts wrapped lines when it redraws a narrow window', () => {
-    // At 20 columns the key help line takes two rows, so the menu is 7 rows tall.
-    const result = runPicker({ columns: 20 });
+    // At 30 columns the key help line takes two rows with Unicode or plain Windows
+    // symbols alike, so the menu is 7 rows tall.
+    const result = runPicker({ columns: 30 });
     assert.ok(result.stderr.includes('\x1b[7A'), 'arrow navigation must go back over the wrapped row too');
     assert.ok(result.stderr.includes('\x1b[8A'), 'Enter must return to the heading above the wrapped rows');
   });
