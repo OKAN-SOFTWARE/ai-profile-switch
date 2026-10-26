@@ -36,7 +36,7 @@ describe('package versions', () => {
     const seen = [];
     const updated = await computeUpdatePlan({ fetchVersion: async pkg => { seen.push(pkg); return '99.0.0'; } });
     assert.equal(updated.self.hasUpdate, true);
-    assert.deepEqual(seen, ['claude-account-switch']);
+    assert.deepEqual(seen, ['ai-profile-switch']);
     assert.equal(updated.claude, undefined);
     const current = await computeUpdatePlan({ fetchVersion: async () => '0.0.1' });
     assert.equal(current.self.hasUpdate, false);

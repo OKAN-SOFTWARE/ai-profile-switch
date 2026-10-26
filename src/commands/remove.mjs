@@ -27,7 +27,7 @@ export async function remove(name) {
     if (newActive) {
       success(`Active profile switched to: ${newActive}`);
     } else {
-      warn('No profiles remaining. Run cpf to add a profile, or npx claude-account-switch@latest init to set up again.');
+      warn('No profiles remaining. Run cpf to add a profile, or npx ai-profile-switch@latest init to set up again.');
     }
   }
 }

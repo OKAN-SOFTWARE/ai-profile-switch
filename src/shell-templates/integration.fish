@@ -3,7 +3,7 @@
 function __claude_switch_cli
   set -l runtime "$HOME/.claude-profiles/_runtime/bin/cli.mjs"
   if not test -f "$runtime"; or not command -q node
-    echo 'Shell runtime unavailable. Run: npx claude-account-switch@latest install-shell' >&2
+    echo 'Shell runtime unavailable. Run: npx ai-profile-switch@latest install-shell' >&2
     return 127
   end
   command node "$runtime" $argv

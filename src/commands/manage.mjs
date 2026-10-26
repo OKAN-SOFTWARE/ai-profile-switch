@@ -24,7 +24,7 @@ function help() {
 Enter these commands in your terminal, outside the Claude Code chat. Use /exit to leave the chat.
 Run claude to choose a profile and launch Claude Code.
 Before renaming, close sessions using that profile; macOS may require sign-in again.
-Without shell setup, use: npx claude-account-switch@latest manage [arguments]`);
+Without shell setup, use: npx ai-profile-switch@latest manage [arguments]`);
 }
 
 export async function manage(args = []) {

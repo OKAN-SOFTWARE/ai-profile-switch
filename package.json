@@ -1,9 +1,10 @@
 {
-  "name": "claude-account-switch",
+  "name": "ai-profile-switch",
   "version": "2.1.0",
-  "description": "Multi-account profile manager for Claude Code",
+  "description": "Profile switching for AI coding CLIs, starting with Claude Code (formerly claude-account-switch)",
   "type": "module",
   "bin": {
+    "ai-profile-switch": "bin/cli.mjs",
     "claude-account-switch": "bin/cli.mjs"
   },
   "files": [
@@ -20,6 +21,7 @@
     "docs:preview": "vitepress preview website"
   },
   "keywords": [
+    "ai",
     "claude",
     "claude-code",
     "multi-account",
@@ -30,7 +32,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ftery0/claude-account-switch.git"
+    "url": "git+https://github.com/ftery0/ai-profile-switch.git"
   },
   "devDependencies": {
     "vitepress": "^1.6.4"

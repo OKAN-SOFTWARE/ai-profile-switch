@@ -38,11 +38,11 @@ export async function update(args = []) {
   console.log('Package                 Installed   Latest');
   console.log(`${self.pkg}   ${self.installed}       ${self.latest}`);
   if (!self.hasUpdate) info('This package is up to date.');
-  else if (values.check) info('Run npx claude-account-switch@latest update to install.');
+  else if (values.check) info('Run npx ai-profile-switch@latest update to install.');
   else {
     const result = await runSelfUpdate({ force: true, computePlan: async () => ({ self }) });
     if (result.action === 'updated') info(`Updated to ${result.version}. New launches use this version; active sessions keep their files.`);
-    else if (result.reason === 'not-installed') info('Local runtime is not installed; no installation was run. Run: npx claude-account-switch@latest install-shell');
+    else if (result.reason === 'not-installed') info('Local runtime is not installed; no installation was run. Run: npx ai-profile-switch@latest install-shell');
     else if (result.reason === 'busy') { warn('An update is already running.'); process.exitCode = 2; }
     else if (result.action === 'failed') { error(`Update failed; existing runtime retained: ${result.error}`); process.exitCode = 2; }
   }

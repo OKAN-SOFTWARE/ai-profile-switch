@@ -37,4 +37,4 @@ export const SHAREABLE_FILES = ['CLAUDE.md', 'keybindings.json'];
 // Skills are linked one by one so each account keeps its own synced skills.
 export const ACCOUNT_SKILL_ENTRIES = ['synced'];
 
-export const SELF_PKG = 'claude-account-switch';
+export const SELF_PKG = 'ai-profile-switch';

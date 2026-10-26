@@ -4,7 +4,7 @@
 __claude_switch_cli() {
   local runtime="$HOME/.claude-profiles/_runtime/bin/cli.mjs"
   if [ ! -f "$runtime" ] || ! command -v node >/dev/null 2>&1; then
-    printf 'Shell runtime unavailable. Run: npx claude-account-switch@latest install-shell\n' >&2
+    printf 'Shell runtime unavailable. Run: npx ai-profile-switch@latest install-shell\n' >&2
     return 127
   fi
   command node "$runtime" "$@"
