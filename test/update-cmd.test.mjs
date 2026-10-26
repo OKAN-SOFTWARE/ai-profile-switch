@@ -54,14 +54,14 @@ describe('explicit package updates', () => {
     assert.match(result.stdout, /99\.0\.0/);
     assert.equal(readFileSync(fakeBin, 'utf8'), 'preserve this executable');
     assert.equal(existsSync(join(homedir(), '.claude-profiles')), false);
-    assert.deepEqual(requests, ['/claude-account-switch/latest']);
+    assert.deepEqual(requests, ['/ai-profile-switch/latest']);
   });
   it('preserves --self and never queries Claude versions', async () => {
     requests = [];
     const result = await runCli(['update', '--self', '--yes']);
     assert.equal(result.code, 0, result.stderr);
     assert.match(result.stdout, /no installation was run/);
-    assert.deepEqual(requests, ['/claude-account-switch/latest']);
+    assert.deepEqual(requests, ['/ai-profile-switch/latest']);
     assert.equal(readFileSync(fakeBin, 'utf8'), 'preserve this executable');
   });
   it('reports Claude version status as unchecked and gives official guidance', async () => {

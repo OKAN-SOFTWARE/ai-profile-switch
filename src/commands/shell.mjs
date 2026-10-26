@@ -61,7 +61,7 @@ async function launch(args, selected) {
   if (getActiveProfile() !== profile) setActiveProfile(profile);
   // Sharing is a convenience; a broken link must not stop Claude from starting.
   try { reportConflicts(syncShared([profile])); } catch (err) { warn(`Shared items not linked: ${err.message}`); }
-  process.stderr.write(`[claude-account-switch] Profile: ${profile}\n`);
+  process.stderr.write(`[ai-profile-switch] Profile: ${profile}\n`);
   const cmd = bin.endsWith('.js') ? process.execPath : bin;
   const childArgs = bin.endsWith('.js') ? [bin, ...args] : args;
   const result = await new Promise(resolve => {
@@ -110,7 +110,7 @@ async function pickProfile(printOnly) {
 
 async function selectProfile() {
   const profiles = listProfiles();
-  if (!profiles.length) throw new Error('No profiles found. Run cpf to add one, or npx claude-account-switch@latest init to import existing Claude settings.');
+  if (!profiles.length) throw new Error('No profiles found. Run cpf to add one, or npx ai-profile-switch@latest init to import existing Claude settings.');
   const active = getActiveProfile();
   const selected = !process.stdin.isTTY || profiles.length === 1
     ? (active ?? profiles[0])

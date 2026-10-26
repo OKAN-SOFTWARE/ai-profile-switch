@@ -40,7 +40,7 @@ const POSITIONAL_COUNTS = { init: 0, add: 1, remove: 1, rename: 2, list: 0, use:
 
 function showHelp(command) {
   if (command) {
-    console.log(`Usage: npx claude-account-switch@latest ${USAGE[command]}`);
+    console.log(`Usage: npx ai-profile-switch@latest ${USAGE[command]}`);
     if (command === 'rename') console.log('Close running sessions for this profile first. Its history and settings are kept; macOS may require sign-in again.');
     if (command === 'remove') console.log('Deletes a registered profile after confirmation. This cannot be undone.');
     if (command === 'add') console.log('Creates a profile. Run claude, choose it, and sign in to the intended account.');
@@ -48,7 +48,7 @@ function showHelp(command) {
     return;
   }
   console.log(`
-  ${color.bold('claude-account-switch')} — Profile switching for Claude Code
+  ${color.bold('ai-profile-switch')} — Profile switching for Claude Code
 
   Everyday commands (in your terminal, after shell setup):
     claude                 Select a profile and launch Claude Code
@@ -56,7 +56,7 @@ function showHelp(command) {
     cpf work               Switch to an existing profile
     cpf --help             Show short management commands
 
-  Usage: npx claude-account-switch@latest <command> [options]
+  Usage: npx ai-profile-switch@latest <command> [options]
 
   Commands:
     init                   First setup; show existing setup on repeated runs
@@ -104,7 +104,7 @@ export async function run(argv) {
     }
     if (Object.hasOwn(POSITIONAL_COUNTS, command)
       && (args.length !== POSITIONAL_COUNTS[command] || args.some(arg => arg.startsWith('-')))) {
-      throw new Error(`Usage: npx claude-account-switch@latest ${USAGE[command]}`);
+      throw new Error(`Usage: npx ai-profile-switch@latest ${USAGE[command]}`);
     }
     await COMMANDS[command](args);
   } catch (err) {

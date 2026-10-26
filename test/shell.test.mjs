@@ -108,7 +108,7 @@ describe('shell installation', () => {
       assert.match(content, /shell pick --print/);
       assert.match(content, /__claude_switch_launch/);
       assert.match(content, /pre-launch\./);
-      assert.doesNotMatch(content, /Get-Command claude-account-switch|claude-account-switch "\$@"/);
+      assert.doesNotMatch(content, /Get-Command (claude-account|ai-profile)-switch|(claude-account|ai-profile)-switch "\$@"/);
       assert.doesNotMatch(content, /@anthropic-ai\/claude-code/);
     }
   });

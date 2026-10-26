@@ -1,11 +1,11 @@
 ---
 layout: home
-title: claude-account-switch — Claude Code 멀티 계정 프로필 관리 도구
+title: ai-profile-switch — Claude Code 멀티 계정 프로필 관리 도구
 description: Claude Code 멀티 계정을 간편하게 관리하세요. CLAUDE_CONFIG_DIR을 활용해 회사/개인 프로필을 즉시 전환합니다.
 jsonLd:
   "@context": "https://schema.org"
   "@type": "SoftwareApplication"
-  name: "claude-account-switch"
+  name: "ai-profile-switch"
   applicationCategory: "DeveloperApplication"
   operatingSystem: "macOS, Linux, Windows"
   offers:
@@ -13,15 +13,15 @@ jsonLd:
     price: "0"
     priceCurrency: "USD"
   description: "Claude Code를 위한 멀티 계정 프로필 관리 도구. 회사와 개인 계정을 즉시 전환합니다."
-  url: "https://ftery0.github.io/claude-account-switch/ko/"
-  downloadUrl: "https://www.npmjs.com/package/claude-account-switch"
+  url: "https://ftery0.github.io/ai-profile-switch/ko/"
+  downloadUrl: "https://www.npmjs.com/package/ai-profile-switch"
   author:
     "@type": "Person"
     name: "haejun"
   license: "https://opensource.org/licenses/MIT"
 
 hero:
-  name: claude-account-switch
+  name: ai-profile-switch
   text: Claude Code 멀티 계정 프로필 관리 도구
   tagline: 회사와 개인 Claude Code 계정을 즉시 전환하세요. 외부 의존성 없음.
   actions:
@@ -30,7 +30,7 @@ hero:
       link: /ko/guide/
     - theme: alt
       text: GitHub에서 보기
-      link: https://github.com/ftery0/claude-account-switch
+      link: https://github.com/ftery0/ai-profile-switch
 
 features:
   - title: 원커맨드 설정

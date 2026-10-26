@@ -14,9 +14,9 @@ export async function migrate(profileName, argv = []) {
   });
   const meta = readMeta();
   if (meta.profiles.length === 0) {
-    throw new Error('No profiles found. Run npx claude-account-switch@latest init first.');
+    throw new Error('No profiles found. Run npx ai-profile-switch@latest init first.');
   }
-  if (positionals.length > 1) throw new Error('Usage: claude-account-switch migrate [profile] --from <path>');
+  if (positionals.length > 1) throw new Error('Usage: ai-profile-switch migrate [profile] --from <path>');
   let target = positionals[0] || (profileName && !profileName.startsWith('-') ? profileName : undefined);
   if (!target) target = await prompt.select('Copy into which profile?', meta.profiles);
   if (!target) return;

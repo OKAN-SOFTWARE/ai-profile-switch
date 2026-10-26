@@ -1,5 +1,5 @@
 ---
-title: Commands and Migration — claude-account-switch
+title: Commands and Migration — ai-profile-switch
 description: Profile management, safe import and version 2 compatibility.
 ---
 
@@ -48,7 +48,7 @@ Names use lowercase letters, digits and hyphens, up to 30 characters, and start/
 
 ## Full CLI
 
-These examples run the source checkout from its root. For a released version, replace `node bin/cli.mjs` with `npx claude-account-switch@latest`, or use `claude-account-switch` with a global installation.
+These examples run the source checkout from its root. For a released version, replace `node bin/cli.mjs` with `npx ai-profile-switch@latest`, or use `ai-profile-switch` with a global installation.
 
 | Copyable command | Behavior |
 | --- | --- |
@@ -85,7 +85,7 @@ Creating a profile or installing shell integration does not automatically copy y
 
 4. At the terminal, run `claude`, select `work`, and sign in to the intended account if asked.
 
-For a published version, the equivalent command is `npx claude-account-switch@latest migrate work --from ~/.claude`. The fixes in this source checkout require installing or running this source until a release includes them.
+For a published version, the equivalent command is `npx ai-profile-switch@latest migrate work --from ~/.claude`. The fixes in this source checkout require installing or running this source until a release includes them.
 
 The default source combines `~/.claude` with the separate `~/.claude.json`. A configured `CLAUDE_CONFIG_DIR` is also detected with its own `.claude.json`. Use `--from` for a custom directory. The source files remain unchanged.
 
@@ -117,4 +117,4 @@ Legacy `--claude-code` prints [official update guidance](https://code.claude.com
 
 Interactive launches automatically check and update this tool once daily in the background. New launches use the verified version; account data, harness hooks and shell profiles remain untouched. Noninteractive launches do not update. Set `CLAUDE_SWITCH_DISABLE_AUTO_UPDATE=1` to disable this. Failed checks retry after an hour; failed downloads retain the installed runtime. Node.js and npm are required, and packages with incompatible runtime protocols or Node requirements are rejected.
 
-Users of 1.x run `npx claude-account-switch@latest install-shell` once and open a new terminal to enable this runtime. Daily shell usage does not need a global installation. An independently installed global command is not automatically updated.
+Users of 1.x run `npx ai-profile-switch@latest install-shell` once and open a new terminal to enable this runtime. Daily shell usage does not need a global installation. An independently installed global command is not automatically updated.

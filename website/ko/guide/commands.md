@@ -1,5 +1,5 @@
 ---
-title: 명령어·이관 — claude-account-switch
+title: 명령어·이관 — ai-profile-switch
 description: 프로필 관리, 충돌 없는 이관과 2 버전 호환 안내.
 ---
 
@@ -48,7 +48,7 @@ cpf rename wrok2 work2
 
 ## 전체 CLI
 
-아래 예시는 저장소 루트에서 소스를 직접 실행합니다. 배포 버전은 `node bin/cli.mjs`를 `npx claude-account-switch@latest`로 바꿉니다. 글로벌 설치를 했다면 `claude-account-switch`를 사용할 수 있습니다.
+아래 예시는 저장소 루트에서 소스를 직접 실행합니다. 배포 버전은 `node bin/cli.mjs`를 `npx ai-profile-switch@latest`로 바꿉니다. 글로벌 설치를 했다면 `ai-profile-switch`를 사용할 수 있습니다.
 
 | 바로 쓸 수 있는 명령 | 동작 |
 | --- | --- |
@@ -85,7 +85,7 @@ cpf rename wrok2 work2
 
 4. 터미널에서 `claude`를 실행하고 `work`를 선택합니다. 요청하면 사용할 계정으로 로그인합니다.
 
-배포 버전의 같은 명령은 `npx claude-account-switch@latest migrate work --from ~/.claude`입니다. 이 소스의 수정 사항은 해당 버전이 배포되기 전까지 소스를 설치하거나 직접 실행해야 적용됩니다.
+배포 버전의 같은 명령은 `npx ai-profile-switch@latest migrate work --from ~/.claude`입니다. 이 소스의 수정 사항은 해당 버전이 배포되기 전까지 소스를 설치하거나 직접 실행해야 적용됩니다.
 
 기본 `~/.claude`와 별도의 `~/.claude.json`을 함께 읽습니다. `CLAUDE_CONFIG_DIR`이 있으면 해당 폴더와 그 안의 `.claude.json`도 대상으로 안내합니다. 임의 경로는 `--from`으로 지정합니다. 원본 파일은 그대로 보존합니다.
 
@@ -117,4 +117,4 @@ claude mcp list
 
 대화형 실행 시 하루 한 번 백그라운드에서 이 도구를 자동 갱신합니다. 다음 실행부터 검증된 버전을 사용하며 계정 데이터·하네스 훅·셸 설정 파일은 수정하지 않습니다. 비대화형 실행에서는 갱신하지 않습니다. `CLAUDE_SWITCH_DISABLE_AUTO_UPDATE=1`로 끌 수 있습니다. 검사 실패 시 한 시간 후 재시도하고, 다운로드 실패 시 기존 실행 파일을 보존합니다. Node.js와 npm이 필요하며 실행 규약이나 Node 요구 사항이 호환되지 않는 패키지는 거부합니다.
 
-1.x 사용자는 `npx claude-account-switch@latest install-shell`을 최초 한 번 실행하고 새 터미널을 열어 새 실행 구조로 전환합니다. 일상적인 셸 사용에 글로벌 설치는 필요하지 않습니다. 별도로 설치한 글로벌 명령은 자동 갱신하지 않습니다.
+1.x 사용자는 `npx ai-profile-switch@latest install-shell`을 최초 한 번 실행하고 새 터미널을 열어 새 실행 구조로 전환합니다. 일상적인 셸 사용에 글로벌 설치는 필요하지 않습니다. 별도로 설치한 글로벌 명령은 자동 갱신하지 않습니다.

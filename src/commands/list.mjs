@@ -6,7 +6,7 @@ export async function list() {
   const profiles = listProfiles();
 
   if (profiles.length === 0) {
-    info('No profiles configured. Run cpf to add one, or npx claude-account-switch@latest init for first setup.');
+    info('No profiles configured. Run cpf to add one, or npx ai-profile-switch@latest init for first setup.');
     return;
   }
 

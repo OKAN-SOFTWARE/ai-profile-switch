@@ -7,7 +7,7 @@ function __claude_switch_cli {
   $node = Get-Command node -CommandType Application -ErrorAction SilentlyContinue
   if (!(Test-Path $runtime) -or !$node) {
     $global:LASTEXITCODE = 127
-    Write-Error 'Shell runtime unavailable. Run: npx claude-account-switch@latest install-shell' -ErrorAction Continue
+    Write-Error 'Shell runtime unavailable. Run: npx ai-profile-switch@latest install-shell' -ErrorAction Continue
     return
   }
   $hadTransport = Test-Path Env:CLAUDE_SWITCH_ARGV

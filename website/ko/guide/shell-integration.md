@@ -1,5 +1,5 @@
 ---
-title: 셸 통합 — claude-account-switch
+title: 셸 통합 — ai-profile-switch
 description: 로컬 실행 파일, 프로필 선택과 기존 실행 훅.
 ---
 
@@ -37,7 +37,7 @@ description: 로컬 실행 파일, 프로필 선택과 기존 실행 훅.
 npm 배포 버전을 사용하려면:
 
 ```bash
-npx claude-account-switch@latest install-shell
+npx ai-profile-switch@latest install-shell
 ```
 
 이 저장소의 변경을 설치하려면 저장소 루트에서 대신 실행합니다.

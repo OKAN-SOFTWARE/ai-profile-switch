@@ -1,11 +1,11 @@
 ---
 layout: home
-title: claude-account-switch — Multi-account Profile Manager for Claude Code
+title: ai-profile-switch — Multi-account Profile Manager for Claude Code
 description: Manage multiple Claude Code accounts with ease. Switch between work and personal profiles instantly using CLAUDE_CONFIG_DIR.
 jsonLd:
   "@context": "https://schema.org"
   "@type": "SoftwareApplication"
-  name: "claude-account-switch"
+  name: "ai-profile-switch"
   applicationCategory: "DeveloperApplication"
   operatingSystem: "macOS, Linux, Windows"
   offers:
@@ -13,15 +13,15 @@ jsonLd:
     price: "0"
     priceCurrency: "USD"
   description: "Multi-account profile manager for Claude Code. Switch between work and personal accounts instantly."
-  url: "https://ftery0.github.io/claude-account-switch/"
-  downloadUrl: "https://www.npmjs.com/package/claude-account-switch"
+  url: "https://ftery0.github.io/ai-profile-switch/"
+  downloadUrl: "https://www.npmjs.com/package/ai-profile-switch"
   author:
     "@type": "Person"
     name: "haejun"
   license: "https://opensource.org/licenses/MIT"
 
 hero:
-  name: claude-account-switch
+  name: ai-profile-switch
   text: Multi-account Profile Manager for Claude Code
   tagline: Switch between work and personal Claude Code accounts instantly. Zero dependencies.
   actions:
@@ -30,7 +30,7 @@ hero:
       link: /guide/
     - theme: alt
       text: View on GitHub
-      link: https://github.com/ftery0/claude-account-switch
+      link: https://github.com/ftery0/ai-profile-switch
 
 features:
   - title: One-Command Setup

@@ -23,11 +23,11 @@ export function existingClaudeSources() {
 export async function init() {
   const current = readMeta();
   if (current.profiles.length > 0) {
-    warn('claude-account-switch is already initialized.');
+    warn('ai-profile-switch is already initialized.');
     console.log(`  Profiles: ${current.profiles.join(', ')}`);
     console.log(`  Active: ${current.activeProfile || 'none'}`);
     console.log(`  Add an account: ${color.cyan('cpf add <name>')}`);
-    console.log(`  Repair shell integration: ${color.cyan('npx claude-account-switch@latest install-shell')}`);
+    console.log(`  Repair shell integration: ${color.cyan('npx ai-profile-switch@latest install-shell')}`);
     return;
   }
 

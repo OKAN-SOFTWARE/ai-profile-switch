@@ -190,7 +190,7 @@ describe('CLI entry point', () => {
 
   it('--help shows usage info', () => {
     const output = runNode([cli, '--help']);
-    assert.ok(output.includes('claude-account-switch'));
+    assert.ok(output.includes('ai-profile-switch'));
     assert.ok(output.includes('Commands:'));
     assert.ok(output.includes('init'));
     assert.ok(output.includes('add'));
