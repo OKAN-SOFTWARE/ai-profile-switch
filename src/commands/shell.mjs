@@ -6,7 +6,9 @@ import { getActiveProfile, setActiveProfile } from '../lib/config.mjs';
 import { HOME, IS_WINDOWS } from '../lib/constants.mjs';
 import { installAllShells } from '../lib/shell.mjs';
 import { listProfiles, profileDir, assertRegisteredProfile } from '../lib/profile.mjs';
-import { success } from '../lib/ui.mjs';
+import { success, warn } from '../lib/ui.mjs';
+import { syncShared } from '../lib/shared.mjs';
+import { reportConflicts } from './share.mjs';
 import * as prompt from '../lib/prompt.mjs';
 import { scheduleSelfUpdate } from '../lib/self-update.mjs';
 
@@ -57,6 +59,8 @@ async function launch(args, selected) {
   }
   scheduleSelfUpdate();
   if (getActiveProfile() !== profile) setActiveProfile(profile);
+  // Sharing is a convenience; a broken link must not stop Claude from starting.
+  try { reportConflicts(syncShared([profile])); } catch (err) { warn(`Shared items not linked: ${err.message}`); }
   process.stderr.write(`[claude-account-switch] Profile: ${profile}\n`);
   const cmd = bin.endsWith('.js') ? process.execPath : bin;
   const childArgs = bin.endsWith('.js') ? [bin, ...args] : args;

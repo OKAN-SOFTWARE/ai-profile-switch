@@ -27,4 +27,14 @@ export const PROFILE_DIRS = [
   'file-history', 'output-styles', 'agent-memory', 'workflows', 'themes', 'tasks',
 ];
 
+// Profile entries a user may opt into sharing with `cpf share add`.
+// Account data (.claude.json, history, projects, plugins) always stays per profile.
+export const SHAREABLE_ENTRIES = [
+  'CLAUDE.md', 'keybindings.json', 'skills', 'agents', 'rules', 'hooks',
+  'output-styles', 'workflows', 'themes',
+];
+export const SHAREABLE_FILES = ['CLAUDE.md', 'keybindings.json'];
+// Skills are linked one by one so each account keeps its own synced skills.
+export const ACCOUNT_SKILL_ENTRIES = ['synced'];
+
 export const SELF_PKG = 'claude-account-switch';

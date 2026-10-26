@@ -88,6 +88,27 @@ cpf rename wrok2 work2
 
 Renaming preserves the profile's history, settings, list position, and active selection. It stops if `work2` already exists. The configuration path changes, so macOS may ask you to sign in again. Start a new Claude session after renaming.
 
+## Shared and per-profile items
+
+By default only `settings.json` and `commands` are shared. Everything else belongs to one profile. Add what you want every profile to use with `cpf share add`.
+
+```bash
+cpf share                  # Show what is shared and whether each profile is in sync
+cpf share add CLAUDE.md    # Share the active profile's CLAUDE.md with every profile
+cpf share add skills       # Share personal skills, linked one by one
+cpf share remove skills    # Stop sharing; each profile keeps a copy
+cpf share sync             # Link items you just added to _shared
+```
+
+| Can be shared | Always per profile |
+| --- | --- |
+| `CLAUDE.md` `keybindings.json` `skills` `agents` `rules` `hooks` `output-styles` `workflows` `themes` | Sign-in and `.claude.json` (MCP servers, project trust), history, `projects`, plugins, `skills/synced` (skills from the account) |
+
+- The shared copy lives in `~/.claude-profiles/_shared/<entry>` and each profile gets a link. `_shared/CLAUDE.md` may itself link to another file.
+- The first `add` copies the active profile's content when `_shared` has none.
+- Links are refreshed when `claude` launches a profile and when a profile is created. A profile file with different content is never replaced; you get a warning. Move or delete it, then run `cpf share sync`.
+- Settings such as `skillOverrides` and `enabledMcpjsonServers` apply to every profile when placed in the shared `settings.json`. Register MCP servers and sign in per profile with `claude mcp add` and `/mcp`.
+
 ## Existing users
 
 To use changes from this source checkout, run this **from the repository root**, then open a new terminal:
@@ -128,6 +149,7 @@ These commands run the source checkout from the repository root. For a released 
 | `node bin/cli.mjs install-shell` | Install, repair, or refresh the local runtime and shell commands |
 | `node bin/cli.mjs update --check` | Check for a published update without installing |
 | `node bin/cli.mjs update` | Update the local runtime |
+| `node bin/cli.mjs share add skills` | Share personal skills with every profile |
 | `node bin/cli.mjs mcp list` | Read legacy MCP names and migration guidance |
 | `node bin/cli.mjs rename --help` | Show help for a command without changing files |
 
