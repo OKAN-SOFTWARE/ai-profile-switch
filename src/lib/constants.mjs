@@ -38,3 +38,7 @@ export const SHAREABLE_FILES = ['CLAUDE.md', 'keybindings.json'];
 export const ACCOUNT_SKILL_ENTRIES = ['synced'];
 
 export const SELF_PKG = 'ai-profile-switch';
+
+// Screen languages; English is the fallback for anything missing.
+export const LANGUAGES = ['en', 'ko'];
+export const LANGUAGE_ENV = 'AI_PROFILE_SWITCH_LANG';

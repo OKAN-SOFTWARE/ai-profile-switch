@@ -69,7 +69,7 @@ async function cancelInit() {
       env: { ...process.env, CLAUDE_CONFIG_DIR: source }, stdio: ['pipe', 'pipe', 'pipe'],
     });
     const replies = [
-      ['How many profiles', '1\n'], ['Profile name:', 'work\n'],
+      ['Profile names', 'work\n'],
       ['Share settings.json', '\r'], ['Copy an existing Claude configuration?', '\x03'],
     ];
     let index = 0;

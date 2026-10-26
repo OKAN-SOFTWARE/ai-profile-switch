@@ -1,30 +1,18 @@
 import * as prompt from '../lib/prompt.mjs';
 import { readMeta } from '../lib/config.mjs';
-import { error, warn } from '../lib/ui.mjs';
+import { color, error, intro, warn } from '../lib/ui.mjs';
+import { accountInfo } from '../lib/account.mjs';
+import { LANGUAGE_NAMES, language as currentLanguage, t } from '../lib/i18n.mjs';
 import { add } from './add.mjs';
 import { list } from './list.mjs';
 import { use } from './use.mjs';
 import { remove } from './remove.mjs';
 import { rename } from './rename.mjs';
 import { share } from './share.mjs';
+import { language } from './language.mjs';
 
 function help() {
-  console.log(`Usage:
-  cpf                         Open the profile management menu
-  cpf <name>                  Switch to an existing profile
-  cpf --list                  List profiles and the active one
-  cpf add <name>              Create a profile
-  cpf rename <old> <new>       Rename a profile, keeping its data
-  cpf remove <name>           Delete a profile after confirmation
-  cpf share                   Show what every profile shares
-  cpf share add <entry>       Share CLAUDE.md, skills, agents, … across profiles
-  cpf share remove <entry>    Stop sharing; each profile keeps a copy
-  cpf --help                  Show this help
-
-Enter these commands in your terminal, outside the Claude Code chat. Use /exit to leave the chat.
-Run claude to choose a profile and launch Claude Code.
-Before renaming, close sessions using that profile; macOS may require sign-in again.
-Without shell setup, use: npx ai-profile-switch@latest manage [arguments]`);
+  console.log(t('manage.help'));
 }
 
 export async function manage(args = []) {
@@ -34,13 +22,14 @@ export async function manage(args = []) {
   }
   if (args.length === 1 && args[0] === '--list') return list();
   if (args[0] === 'share') return share(args.slice(1));
+  if (args[0] === 'language') return language(args.slice(1));
   if (args.length === 1 && !args[0].startsWith('-')) return use(args[0]);
   if (args.length > 0) {
     const [command, ...names] = args;
     const operations = { add: [1, add], remove: [1, remove], rename: [2, rename] };
     const operation = Object.hasOwn(operations, command) ? operations[command] : undefined;
     if (!operation || names.length !== operation[0] || names.some(name => name.startsWith('-'))) {
-      throw new Error('Invalid arguments. Run cpf --help for usage.');
+      throw new Error(t('manage.invalid'));
     }
     return operation[1](...names);
   }
@@ -49,48 +38,46 @@ export async function manage(args = []) {
     return;
   }
 
+  const start = readMeta().activeProfile;
+  const email = start ? accountInfo(start).email : null;
+  intro('ai-profile-switch', start ? t('menu.current', { name: [start, email].filter(Boolean).join(' · ') }) : '');
   while (true) {
     const meta = readMeta();
+    const item = (value, hint) => ({ label: t(`menu.${value}`), value, hint: hint && color.dim(hint) });
     const actions = meta.profiles.length ? [
-      { label: 'Switch profile', value: 'use' },
-      { label: 'List profiles', value: 'list' },
-      { label: 'Add profile', value: 'add' },
-      { label: 'Rename profile', value: 'rename' },
-      { label: 'Delete profile', value: 'remove' },
-      { label: 'Show shared items', value: 'share' },
-      { label: 'Exit', value: 'exit' },
-    ] : [
-      { label: 'Add profile', value: 'add' },
-      { label: 'Exit', value: 'exit' },
-    ];
-    const action = await prompt.select(`Manage profiles (active: ${meta.activeProfile || 'none'})`, actions);
+      item('use'), item('list'), item('add'), item('rename'), item('remove', t('menu.removeHint')),
+      item('share'), item('language', LANGUAGE_NAMES[currentLanguage()]), item('exit'),
+    ] : [item('add'), item('language', LANGUAGE_NAMES[currentLanguage()]), item('exit')];
+    const action = await prompt.select(t('menu.question'), actions);
     if (!action || action === 'exit') return;
     try {
       if (action === 'list') {
         await list();
       } else if (action === 'share') {
         await share();
+      } else if (action === 'language') {
+        await language();
       } else if (action === 'add') {
-        const name = await prompt.text('New profile name (empty to cancel):');
+        const name = await prompt.text(t('menu.addName'));
         if (name) await add(name);
       } else {
-        const name = await prompt.select('Choose a profile:', meta.profiles.map(profile => ({
-          label: profile === meta.activeProfile ? `${profile} (active)` : profile,
+        const name = await prompt.select(t('menu.choose'), meta.profiles.map(profile => ({
+          label: profile === meta.activeProfile ? `${profile} ${t('menu.active')}` : profile,
           value: profile,
         })), { initial: meta.profiles.indexOf(meta.activeProfile) });
         if (!name) return;
         if (action === 'use') await use(name);
         else if (action === 'remove') await remove(name);
         else {
-          warn('Close running sessions for this profile before continuing. macOS may require sign-in again.');
-          const newName = await prompt.text('New name (empty to cancel):');
-          if (newName && await prompt.confirm(`Rename "${name}" to "${newName}"?`, false)) {
+          warn(t('menu.renameWarn'));
+          const newName = await prompt.text(t('menu.newName'));
+          if (newName && await prompt.confirm(t('menu.renameConfirm', { old: name, new: newName }), false)) {
             await rename(name, newName);
           }
         }
       }
     } catch (err) {
-      error(err.message);
+      error(err.message, err.hints);
     }
   }
 }

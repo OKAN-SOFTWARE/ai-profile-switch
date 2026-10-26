@@ -3,7 +3,8 @@ import { computeUpdatePlan, compareSemver } from '../lib/updater.mjs';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { installedRuntimeDirectory, runSelfUpdate } from '../lib/self-update.mjs';
-import { info, warn, error } from '../lib/ui.mjs';
+import { displayWidth, info, warn, error } from '../lib/ui.mjs';
+import { t } from '../lib/i18n.mjs';
 
 export async function update(args = []) {
   const { values, positionals } = parseArgs({ args, allowPositionals: true, options: {
@@ -14,10 +15,10 @@ export async function update(args = []) {
   } });
   if (positionals.length) throw new Error('Usage: update [--check] [--self]');
   if (values['claude-code']) {
-    info('Claude Code manages its own updates. Run claude update (or your package manager).');
-    info('See https://code.claude.com/docs/en/setup');
+    info(t('update.claudeManaged'));
+    info(t('update.seeSetup'));
     if (values.check) {
-      warn('Claude Code update status was not checked.');
+      warn(t('update.notChecked'));
       process.exitCode = 2;
     }
     if (!values.self) return;
@@ -35,16 +36,18 @@ export async function update(args = []) {
     process.exitCode = 2;
     return;
   }
-  console.log('Package                 Installed   Latest');
-  console.log(`${self.pkg}   ${self.installed}       ${self.latest}`);
-  if (!self.hasUpdate) info('This package is up to date.');
-  else if (values.check) info('Run npx ai-profile-switch@latest update to install.');
+  const table = [[t('update.package'), t('update.installed'), t('update.latest')], [self.pkg, self.installed, self.latest]];
+  const widths = [0, 1].map(column => Math.max(...table.map(row => displayWidth(row[column]))) + 3);
+  for (const row of table) console.log(row.map((cell, column) => cell + ' '.repeat(Math.max(0, (widths[column] ?? 0) - displayWidth(cell)))).join('').trimEnd());
+  if (!self.hasUpdate) info(t('update.upToDate'));
+  else if (values.check) info(t('update.runToInstall'));
   else {
     const result = await runSelfUpdate({ force: true, computePlan: async () => ({ self }) });
-    if (result.action === 'updated') info(`Updated to ${result.version}. New launches use this version; active sessions keep their files.`);
-    else if (result.reason === 'not-installed') info('Local runtime is not installed; no installation was run. Run: npx ai-profile-switch@latest install-shell');
-    else if (result.reason === 'busy') { warn('An update is already running.'); process.exitCode = 2; }
-    else if (result.action === 'failed') { error(`Update failed; existing runtime retained: ${result.error}`); process.exitCode = 2; }
+    if (result.action === 'updated') info(t('update.updated', { version: result.version }));
+    else if (result.reason === 'not-installed') info(t('update.notInstalled'));
+    else if (result.reason === 'busy') { warn(t('update.busy')); process.exitCode = 2; }
+    else if (result.action === 'failed') { error(t('update.failed', { error: result.error })); process.exitCode = 2; }
   }
   if (values.check && !values['claude-code']) process.exitCode = self.hasUpdate ? 1 : 0;
 }
+

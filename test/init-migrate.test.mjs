@@ -39,7 +39,7 @@ function run(args, env = {}) {
 }
 
 function wizard(name = 'work', env = {}) {
-  return interactive([cli, 'init'], [['How many profiles', '1\n'], ['Profile name:', name + '\n']], env);
+  return interactive([cli, 'init'], [['Profile names', name + '\n']], env);
 }
 
 function interactive(argv, replies, env = {}) {
@@ -137,7 +137,7 @@ describe('init existing Claude installation', () => {
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /already initialized/);
     assert.match(result.stdout, /Active: work/);
-    assert.doesNotMatch(result.stdout, /Reinitialize|How many profiles/);
+    assert.doesNotMatch(result.stdout, /Reinitialize|Profile names/);
     assert.deepEqual(snapshot(HOME), before);
   });
 
@@ -177,9 +177,7 @@ describe('init existing Claude installation', () => {
   it('cancelling the active profile selection leaves the home untouched', async () => {
     const before = snapshot(HOME);
     const result = await interactive(ttyCommand('init', 'init()'), [
-      ['How many profiles', '2\n'],
-      ['Profile 1 name:', 'work\n'],
-      ['Profile 2 name:', 'personal\n'],
+      ['Profile names', 'work, personal\n'],
       ['Which profile should be active', '\x03'],
     ]);
     assert.equal(result.status, 0, result.stderr + result.stdout);
@@ -190,8 +188,7 @@ describe('init existing Claude installation', () => {
     write(join(HOME, '.claude.json'), '{"account":"root"}');
     const before = snapshot(HOME);
     const result = await interactive(ttyCommand('init', 'init()'), [
-      ['How many profiles', '1\n'],
-      ['Profile name:', 'work\n'],
+      ['Profile names', 'work\n'],
       ['Share settings.json', '\r'],
       ['Copy an existing Claude configuration?', '\x03'],
     ]);

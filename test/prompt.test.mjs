@@ -13,7 +13,7 @@ const shellURL = new URL('../src/commands/shell.mjs', import.meta.url).href;
 // stream chunks. No fixture invokes Claude or touches the user's profile data.
 function runPicker({ keys = ['\x1b[B', '\r'], stdinTTY = true, stdoutTTY = false, outputTTY = true,
   noColor = false, term = 'xterm-256color', shell = false, initial = 0,
-  raw = false, flowing = false, confirm = false, defaultOutput = false, sequence = false } = {}) {
+  raw = false, flowing = false, confirm = false, defaultOutput = false, sequence = false, accounts = {}, status = 0 } = {}) {
   const env = { ...process.env, TERM: term };
   delete env.FORCE_COLOR;
   if (noColor) env.NO_COLOR = '1';
@@ -22,6 +22,7 @@ function runPicker({ keys = ['\x1b[B', '\r'], stdinTTY = true, stdoutTTY = false
     const home = mkdtempSync(join(process.env.TMPDIR, 'picker-home-'));
     const profiles = join(home, '.claude-profiles');
     for (const name of choices) mkdirSync(join(profiles, name), { recursive: true });
+    for (const [name, config] of Object.entries(accounts)) writeFileSync(join(profiles, name, '.claude.json'), JSON.stringify(config));
     writeFileSync(join(profiles, 'meta.json'), JSON.stringify({
       version: 1, activeProfile: 'work', shareSettings: true, profiles: choices,
     }));
@@ -100,14 +101,15 @@ function runPicker({ keys = ['\x1b[B', '\r'], stdinTTY = true, stdoutTTY = false
     env, encoding: 'utf8', timeout: 5000,
   });
   assert.ifError(result.error);
-  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.status, status, result.stderr);
   return result;
 }
 
 function assertRedraw(output) {
-  assert.ok(output.includes('\x1b[4A'), 'arrow navigation must return to the four existing choices');
+  // Four choices, the key help line and the closing rail.
+  assert.ok(output.includes('\x1b[6A'), 'arrow navigation must return to the existing menu rows');
   assert.ok(output.includes('\x1b[2K'), 'redraw must erase previous choice lines');
-  assert.ok(output.includes('\x1b[5A'), 'Enter must return to the prompt heading');
+  assert.ok(output.includes('\x1b[7A'), 'Enter must return to the prompt heading');
   assert.ok(output.includes('\x1b[0J'), 'Enter must erase remaining menu rows');
 }
 
@@ -135,7 +137,16 @@ describe('profile picker terminal output', () => {
   it('keeps shell pick --print stdout limited to the selected profile', () => {
     const result = runPicker({ shell: true });
     assert.equal(result.stdout, 'personal\n');
-    assertRedraw(result.stderr);
+    // Each profile has a name row, a detail row and a spacer, then key help and the closing rail.
+    assert.ok(result.stderr.includes('\x1b[14A'), 'arrow navigation must return to the existing menu rows');
+    assert.ok(result.stderr.includes('\x1b[15A'), 'Enter must return to the prompt heading');
+    // stdout is captured by the shell, so color follows the terminal on stderr.
+    assert.match(result.stderr, /\x1b\[36m/);
+    const text = result.stderr.replace(/\x1b\[[0-9;]*m/g, '');
+    assert.match(text, /Which account do you want to use\?/);
+    assert.match(text, /Not signed in yet/);
+    assert.match(text, /Starting with personal/);
+    assert.match(text, /Opening Claude Code/);
   });
 
   it('does not emit terminal commands for TERM=dumb', () => {
@@ -154,6 +165,40 @@ describe('profile picker terminal output', () => {
     const result = runPicker({ stdinTTY: false, initial: 2, keys: [] });
     assert.deepEqual(JSON.parse(result.stdout), { value: 'omlx' });
     assert.equal(result.stderr, '');
+  });
+
+  it('picks a profile at once with its number key', () => {
+    const result = runPicker({ shell: true, keys: ['3'] });
+    assert.equal(result.stdout, 'omlx\n');
+  });
+
+  it('shows the email, plan and usage Claude saved for each profile', () => {
+    const accounts = {
+      work: {
+        oauthAccount: { emailAddress: 'kim@company.test', organizationType: 'claude_max' },
+        cachedUsageUtilization: { fetchedAtMs: Date.now() - 12 * 60000, utilization: { five_hour: { utilization: 28 }, seven_day: { utilization: 86.4 } } },
+      },
+      personal: { oauthAccount: { emailAddress: 'me@mail.test', organizationType: 'claude_pro' } },
+    };
+    const result = runPicker({ shell: true, accounts });
+    assert.match(result.stderr, /kim@company\.test · Max/);
+    assert.match(result.stderr, /5-hour \S+  28%/);
+    assert.match(result.stderr, /Weekly \S+  86%/);
+    assert.match(result.stderr, /12 minutes ago/);
+    assert.match(result.stderr, /me@mail\.test · Pro/);
+    assert.match(result.stderr, /No usage saved yet/);
+    assert.match(result.stderr, /in use/);
+  });
+
+  it('cancels with Esc and prints nothing on stdout', () => {
+    const result = runPicker({ shell: true, keys: ['\x1b'], status: 130 });
+    assert.equal(result.stdout, '');
+    assert.match(result.stderr, /cancelled/);
+  });
+
+  it('returns null on Esc for a plain menu', () => {
+    const result = runPicker({ keys: ['\x1b'] });
+    assert.deepEqual(JSON.parse(result.stdout), { value: null });
   });
 
   it('returns null on Ctrl-C and restores raw mode and listeners', () => {

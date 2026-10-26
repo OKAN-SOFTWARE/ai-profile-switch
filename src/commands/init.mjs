@@ -1,11 +1,12 @@
 import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { color, box, success, warn } from '../lib/ui.mjs';
+import { color, intro, outro, success, sym, warn } from '../lib/ui.mjs';
 import * as prompt from '../lib/prompt.mjs';
 import { readMeta, writeMeta } from '../lib/config.mjs';
 import { createProfile, profileExists, validateProfileName, migrateDir, migrationSource } from '../lib/profile.mjs';
 import { HOME, DEFAULT_CLAUDE_DIR, IS_WINDOWS } from '../lib/constants.mjs';
 import { installAllShells } from '../lib/shell.mjs';
+import { t } from '../lib/i18n.mjs';
 
 export function existingClaudeSources() {
   const candidates = [
@@ -23,87 +24,85 @@ export function existingClaudeSources() {
 export async function init() {
   const current = readMeta();
   if (current.profiles.length > 0) {
-    warn('ai-profile-switch is already initialized.');
-    console.log(`  Profiles: ${current.profiles.join(', ')}`);
-    console.log(`  Active: ${current.activeProfile || 'none'}`);
-    console.log(`  Add an account: ${color.cyan('cpf add <name>')}`);
-    console.log(`  Repair shell integration: ${color.cyan('npx ai-profile-switch@latest install-shell')}`);
+    warn(t('init.already'));
+    console.log(`  ${color.dim(t('init.profiles'))} ${current.profiles.join(', ')}`);
+    console.log(`  ${color.dim(t('init.active'))} ${current.activeProfile || t('common.none')}`);
+    console.log(`  ${color.dim(t('init.addHint'))} ${color.cyan('cpf add <name>')}`);
+    console.log(`  ${color.dim(t('init.repairHint'))} ${color.cyan('npx ai-profile-switch@latest install-shell')}`);
     return;
   }
 
-  console.log();
-  console.log(box([
-    `Welcome to ${color.bold('Claude Switch!')}`,
-    'Multi-account manager for Claude Code',
-  ]));
-  console.log();
-  warn('Close Claude sessions using the configuration you will import. Keep source and destination sessions closed until migration finishes.');
-  const count = await prompt.number('How many profiles do you want to set up?', 2);
-  console.log();
-  const names = [];
-  for (let index = 0; index < count; index++) {
-    const defaultName = count === 1 ? 'main' : index === 0 ? 'work' : index === 1 ? 'personal' : '';
-    const message = count === 1 ? 'Profile name:' : `Profile ${index + 1} name:`;
-    names.push(await askProfileName(message, defaultName, names));
-  }
-  console.log();
+  intro(t('init.title'));
+  console.log(`${color.dim(sym.rail)}  ${color.dim(t('init.tagline'))}`);
+  console.log(`${color.dim(sym.rail)}  ${color.dim(t('init.closeSessions'))}`);
+  console.log(color.dim(sym.rail));
+  const names = await askProfileNames();
   const activeProfile = names.length === 1
     ? names[0]
-    : await prompt.select('Which profile should be active by default?', names);
+    : await prompt.select(t('init.activeQuestion'), names);
   if (!activeProfile) return;
-  const shareSettings = await prompt.confirm('Share settings.json and commands across profiles?', true);
+  const shareSettings = await prompt.confirm(t('init.shareQuestion'), true);
   const sources = existingClaudeSources();
   let migration;
   if (sources.length > 0) {
-    const source = await prompt.select('Copy an existing Claude configuration?', [
+    const source = await prompt.select(t('init.copyQuestion'), [
       ...sources.map(path => ({ label: path, value: path })),
-      { label: 'Skip', value: '__skip__' },
+      { label: t('init.skip'), value: '__skip__' },
     ]);
     if (!source) return;
     if (source !== '__skip__') {
-      const target = names.length === 1 ? names[0] : await prompt.select('Copy into which profile?', names);
+      const target = names.length === 1 ? names[0] : await prompt.select(t('migrate.target'), names);
       if (!target) return;
       migration = { source, target };
     }
   }
   for (const name of names) {
-    if (profileExists(name)) throw new Error(`Profile directory "${name}" already exists. Choose another name.`);
+    if (profileExists(name)) throw new Error(t('init.dirExists', { name }));
   }
+  outro('');
   if (migration) {
     const { backupPath } = migrateDir(migration.source, migration.target, shareSettings);
-    success(`Copied ${migration.source} → profile: ${migration.target}`);
-    if (backupPath) warn(`Previous destination data backup: ${backupPath}`);
+    success(t('migrate.copied', { source: migration.source, name: migration.target }));
+    if (backupPath) warn(t('migrate.backup', { path: backupPath }));
   }
   for (const name of names) {
     if (migration?.target !== name) createProfile(name, shareSettings);
-    success(`Profile ready: ${name}`);
+    success(t('init.ready', { name }));
   }
   writeMeta({ ...readMeta(), activeProfile, shareSettings });
   const { newlyInstalled, alreadyInstalled } = installAllShells();
   const shells = [...newlyInstalled, ...alreadyInstalled];
-  if (shells.length > 0) success(`Shell integration installed (${shells.join(', ')})`);
-  success(`Active profile: ${activeProfile}`);
+  if (shells.length > 0) success(t('init.shells', { shells: shells.join(', ') }));
+  success(t('init.activeDone', { name: activeProfile }));
   console.log();
-  console.log(`  Open a new terminal and run ${color.cyan('claude')}. Claude will check authentication.`);
+  console.log(`  ${t('init.openTerminal', { command: color.cyan('claude') })}`);
   if (names.length > 1) {
     const other = names.find(name => name !== activeProfile);
     const command = IS_WINDOWS ? `cpf ${other}; claude` : `cpf ${other} && claude`;
-    console.log(`  To use another profile: ${color.cyan(command)}`);
+    console.log(`  ${t('init.otherProfile')} ${color.cyan(command)}`);
   }
-  if (migration) {
-    warn('Original configuration was preserved. macOS Keychain credentials are not copied.');
-  }
+  if (migration) warn(t('migrate.preserved'));
   console.log();
 }
 
-async function askProfileName(message, defaultName, names) {
+// One prompt takes every name, such as "work, personal".
+async function askProfileNames() {
   while (true) {
-    const name = await prompt.text(message, defaultName);
-    const error = validateProfileName(name);
-    if (error || names.includes(name) || profileExists(name)) {
-      console.log(`  ${color.red(error || `"${name}" is already used — choose a different name`)}`);
-      continue;
-    }
-    return name;
+    const names = (await prompt.text(t('init.names'), 'work, personal'))
+      .split(',').map(name => name.trim()).filter(Boolean);
+    const problem = profileNamesProblem(names);
+    if (!problem) return names;
+    console.log(`  ${color.red(problem)}`);
   }
+}
+
+function profileNamesProblem(names) {
+  if (!names.length) return validateProfileName('');
+  for (const [index, name] of names.entries()) {
+    const error = validateProfileName(name);
+    if (error) return `${name}: ${error}`;
+    if (names.indexOf(name) !== index) return t('init.duplicate', { name });
+    if (profileExists(name)) return t('init.used', { name });
+  }
+  return null;
 }

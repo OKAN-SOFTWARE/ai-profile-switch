@@ -1,5 +1,5 @@
 import {
-  META_FILE, PROFILE_NAME_REGEX, PROFILE_NAME_MAX_LENGTH, RESERVED_NAMES, SHAREABLE_ENTRIES,
+  LANGUAGES, META_FILE, PROFILE_NAME_REGEX, PROFILE_NAME_MAX_LENGTH, RESERVED_NAMES, SHAREABLE_ENTRIES,
 } from './constants.mjs';
 import { readJsonFile, writeJsonFile } from './json-fs.mjs';
 
@@ -19,6 +19,7 @@ export function readMeta() {
     || new Set(meta.profiles).size !== meta.profiles.length
     || (meta.activeProfile !== null && !meta.profiles.includes(meta.activeProfile))
     || typeof meta.shareSettings !== 'boolean'
+    || (meta.language !== undefined && !LANGUAGES.includes(meta.language))
     || (meta.shared !== undefined && (!Array.isArray(meta.shared)
       || meta.shared.some(entry => !SHAREABLE_ENTRIES.includes(entry))
       || new Set(meta.shared).size !== meta.shared.length))) {
@@ -59,6 +60,12 @@ export function getSharedEntries() {
 export function setSharedEntries(entries) {
   const meta = readMeta();
   writeMeta({ ...meta, shared: entries });
+}
+
+// null clears the choice so the system language is used again.
+export function setLanguagePreference(language) {
+  const { language: _previous, ...meta } = readMeta();
+  writeMeta(language ? { ...meta, language } : meta);
 }
 
 export function removeProfileFromMeta(name) {

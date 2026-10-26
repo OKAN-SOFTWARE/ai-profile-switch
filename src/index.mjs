@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { error, color } from './lib/ui.mjs';
+import { t } from './lib/i18n.mjs';
 
 const pkg = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json'), 'utf8'));
 
@@ -16,6 +17,7 @@ const COMMANDS = {
   'install-shell': () => import('./commands/install-shell.mjs').then(m => m.installShell()),
   migrate: args => import('./commands/migrate.mjs').then(m => m.migrate(undefined, args)),
   share: args => import('./commands/share.mjs').then(m => m.share(args)),
+  language: args => import('./commands/language.mjs').then(m => m.language(args)),
   mcp: args => import('./commands/mcp/index.mjs').then(m => m.mcp(args)),
   update: args => import('./commands/update.mjs').then(m => m.update(args)),
   shell: args => import('./commands/shell.mjs').then(m => m.shell(args)),
@@ -32,48 +34,22 @@ const USAGE = {
   'install-shell': 'install-shell',
   migrate: 'migrate [profile] [--from <path>]',
   share: 'share [list | add <entry> | remove <entry> | sync]',
+  language: 'language [auto | en | ko]',
   mcp: 'mcp [list]',
   update: 'update [--check] [--self] [--claude-code] [--yes]',
   shell: 'shell <launch|use|pick|refresh>',
 };
 const POSITIONAL_COUNTS = { init: 0, add: 1, remove: 1, rename: 2, list: 0, use: 1, 'install-shell': 0 };
 
+const COMMAND_NOTES = { rename: 'index.helpRename', remove: 'index.helpRemove', add: 'index.helpAdd', use: 'index.helpUse' };
+
 function showHelp(command) {
   if (command) {
-    console.log(`Usage: npx ai-profile-switch@latest ${USAGE[command]}`);
-    if (command === 'rename') console.log('Close running sessions for this profile first. Its history and settings are kept; macOS may require sign-in again.');
-    if (command === 'remove') console.log('Deletes a registered profile after confirmation. This cannot be undone.');
-    if (command === 'add') console.log('Creates a profile. Run claude, choose it, and sign in to the intended account.');
-    if (command === 'use') console.log('Changes the active profile for future launches; existing sessions keep their profile.');
+    console.log(t('index.usage', { usage: USAGE[command] }));
+    if (Object.hasOwn(COMMAND_NOTES, command)) console.log(t(COMMAND_NOTES[command]));
     return;
   }
-  console.log(`
-  ${color.bold('ai-profile-switch')} — Profile switching for Claude Code
-
-  Everyday commands (in your terminal, after shell setup):
-    claude                 Select a profile and launch Claude Code
-    cpf                    Open the profile management menu
-    cpf work               Switch to an existing profile
-    cpf --help             Show short management commands
-
-  Usage: npx ai-profile-switch@latest <command> [options]
-
-  Commands:
-    init                   First setup; show existing setup on repeated runs
-    add <name>             Create a profile
-    remove <name>          Remove a profile after confirmation
-    rename <old> <new>      Rename a profile, keeping its data
-    list                   List profiles
-    use <name>             Change the active profile
-    manage                 Open the same menu as cpf
-    install-shell          Install or repair shell integration
-    migrate [name]         Import existing settings (--from <path>)
-    update [--check]        Update this tool; --check only checks
-    share [add|remove]     Share CLAUDE.md, skills, agents, … across profiles
-    mcp [list]             Show legacy MCP migration guidance
-
-  Run any command with --help for its usage.
-`);
+  console.log(t('index.help', { title: color.bold('ai-profile-switch') }));
 }
 
 export async function run(argv) {
@@ -88,7 +64,7 @@ export async function run(argv) {
     return;
   }
   if (!Object.hasOwn(COMMANDS, command)) {
-    error(`Unknown command: ${command}`);
+    error(t('index.unknown', { command }));
     showHelp();
     process.exitCode = 1;
     return;
@@ -104,11 +80,11 @@ export async function run(argv) {
     }
     if (Object.hasOwn(POSITIONAL_COUNTS, command)
       && (args.length !== POSITIONAL_COUNTS[command] || args.some(arg => arg.startsWith('-')))) {
-      throw new Error(`Usage: npx ai-profile-switch@latest ${USAGE[command]}`);
+      throw new Error(t('index.usage', { usage: USAGE[command] }));
     }
     await COMMANDS[command](args);
   } catch (err) {
-    error(err.message);
+    error(err.message, err.hints);
     process.exitCode = 1;
   }
 }
