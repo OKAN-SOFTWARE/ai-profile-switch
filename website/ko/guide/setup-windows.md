@@ -1,7 +1,7 @@
 ---
-title: Windows 설정 — claude-account-switch
+title: Windows 설정 — ai-profile-switch
 description: 기존 설치 확인, 프로필 설정과 셸 복구.
-jsonLd: {"@context": "https://schema.org", "@type": "HowTo", "name": "Windows 프로필 설정", "step": [{"@type": "HowToStep", "name": "준비", "text": "Node.js 18.19+ (18계열) 또는 20.10+, npm과 기존 Claude Code 설치를 확인합니다."}, {"@type": "HowToStep", "name": "초기 설정", "text": "npx claude-account-switch@latest init으로 프로필을 설정합니다."}, {"@type": "HowToStep", "name": "실행", "text": "새 터미널을 열고 claude를 실행합니다."}]}
+jsonLd: {"@context": "https://schema.org", "@type": "HowTo", "name": "Windows 프로필 설정", "step": [{"@type": "HowToStep", "name": "준비", "text": "Node.js 18.19+ (18계열) 또는 20.10+, npm과 기존 Claude Code 설치를 확인합니다."}, {"@type": "HowToStep", "name": "초기 설정", "text": "npx ai-profile-switch@latest init으로 프로필을 설정합니다."}, {"@type": "HowToStep", "name": "실행", "text": "새 터미널을 열고 claude를 실행합니다."}]}
 ---
 
 # Windows 설정
@@ -9,7 +9,7 @@ jsonLd: {"@context": "https://schema.org", "@type": "HowTo", "name": "Windows �
 Node.js 18.19+ (18계열) 또는 20.10+와 npm, Claude Code가 필요합니다. 기존 Claude가 있으면 재설치하지 않습니다. 없는 경우 [공식 설치 가이드](https://code.claude.com/docs/en/setup)를 따릅니다.
 
 ```powershell
-npx claude-account-switch@latest init
+npx ai-profile-switch@latest init
 ```
 
 새 터미널을 열고 `claude`, `cpf personal`, `claude-pick`을 사용합니다. 여러 프로필이면 실행 시 선택기가 나옵니다. 기존 초기화에서 `init`은 요약만 보여줍니다.
@@ -17,7 +17,7 @@ npx claude-account-switch@latest init
 ## 셸 복구
 
 ```powershell
-npx claude-account-switch@latest install-shell
+npx ai-profile-switch@latest install-shell
 ```
 
 Windows의 Documents 폴더 아래 PowerShell 5.1과 PowerShell 7 콘솔 프로필을 모두 연결합니다. OneDrive 등으로 이동한 Documents 폴더도 처리하며, 기존 프로필의 내용과 인코딩을 보존합니다.

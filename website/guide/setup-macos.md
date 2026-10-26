@@ -1,7 +1,7 @@
 ---
-title: macOS Setup — claude-account-switch
+title: macOS Setup — ai-profile-switch
 description: Existing installation checks, profile setup and shell repair.
-jsonLd: {"@context": "https://schema.org", "@type": "HowTo", "name": "macOS profile setup", "step": [{"@type": "HowToStep", "name": "Prerequisites", "text": "Check Node.js 18.19+ (18.x) or 20.10+, npm and your existing Claude Code installation."}, {"@type": "HowToStep", "name": "Setup", "text": "Run npx claude-account-switch@latest init to configure profiles."}, {"@type": "HowToStep", "name": "Launch", "text": "Open a new terminal and run claude."}]}
+jsonLd: {"@context": "https://schema.org", "@type": "HowTo", "name": "macOS profile setup", "step": [{"@type": "HowToStep", "name": "Prerequisites", "text": "Check Node.js 18.19+ (18.x) or 20.10+, npm and your existing Claude Code installation."}, {"@type": "HowToStep", "name": "Setup", "text": "Run npx ai-profile-switch@latest init to configure profiles."}, {"@type": "HowToStep", "name": "Launch", "text": "Open a new terminal and run claude."}]}
 ---
 
 # macOS Setup
@@ -9,7 +9,7 @@ jsonLd: {"@context": "https://schema.org", "@type": "HowTo", "name": "macOS prof
 Use Node.js 18.19+ (18.x) or 20.10+, npm and Claude Code. Keep your existing Claude installation; if missing, follow the [official installation guide](https://code.claude.com/docs/en/setup).
 
 ```bash
-npx claude-account-switch@latest init
+npx ai-profile-switch@latest init
 ```
 
 Open a new terminal and use `claude`, `cpf personal` and `claude-pick`. Multiple profiles show a picker on interactive launch. Existing setups get a summary when `init` is repeated.
@@ -17,7 +17,7 @@ Open a new terminal and use `claude`, `cpf personal` and `claude-pick`. Multiple
 ## Shell repair
 
 ```bash
-npx claude-account-switch@latest install-shell
+npx ai-profile-switch@latest install-shell
 ```
 
 Configuration locations: `~/.zshrc` (zsh), `~/.bashrc` (bash), `~/.config/fish/config.fish` (fish).

@@ -1,5 +1,5 @@
 ---
-title: Shell Integration — claude-account-switch
+title: Shell Integration — ai-profile-switch
 description: Local runtime, profile selection and existing launch hooks.
 ---
 
@@ -37,7 +37,7 @@ Arguments including `--help`, `--version` and spaces, as well as exit status, pa
 For the published npm version:
 
 ```bash
-npx claude-account-switch@latest install-shell
+npx ai-profile-switch@latest install-shell
 ```
 
 To install changes from this checkout, run this from its root instead:

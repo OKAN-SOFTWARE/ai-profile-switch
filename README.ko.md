@@ -1,20 +1,20 @@
-# claude-account-switch
+# ai-profile-switch
 
-[![npm version](https://img.shields.io/npm/v/claude-account-switch)](https://www.npmjs.com/package/claude-account-switch)
-[![license](https://img.shields.io/npm/l/claude-account-switch)](./LICENSE)
+[![npm version](https://img.shields.io/npm/v/ai-profile-switch)](https://www.npmjs.com/package/ai-profile-switch)
+[![license](https://img.shields.io/npm/l/ai-profile-switch)](./LICENSE)
 
 `CLAUDE_CONFIG_DIR`로 [Claude Code 계정](https://code.claude.com/docs/en/iam#log-in-with-multiple-accounts)을 전환합니다. 실행에 필요한 외부 패키지는 없습니다.
 
-[English](./README.md) · [전체 가이드](https://ftery0.github.io/claude-account-switch/ko/guide/)
+[English](./README.md) · [전체 가이드](https://ftery0.github.io/ai-profile-switch/ko/guide/)
 
-이 README는 저장소 소스 기준입니다. 새 `cpf` 관리 메뉴와 이름 변경은 이 소스 또는 해당 기능이 포함된 배포 버전이 필요합니다. `@latest`는 현재 npm에 배포된 패키지를 설치합니다. 이 소스를 셸에 반영하는 방법은 [기존 사용자](#기존-사용자)를 참고하세요.
+예전 이름은 `claude-account-switch` 입니다. 설치된 셸은 다음 자동 업데이트 때 이 이름으로 넘어오고, `claude-account-switch` 명령도 같은 명령의 별칭으로 남습니다. [기존 사용자](#기존-사용자)를 참고하세요.
 
 ## 시작
 
 Node.js 18.19+ (18계열) 또는 20.10+와 기존 Claude Code 설치를 사용합니다. Claude Code가 없다면 [공식 설치 가이드](https://code.claude.com/docs/en/setup)를 따릅니다.
 
 ```bash
-npx claude-account-switch@latest init
+npx ai-profile-switch@latest init
 ```
 
 프로필 이름(예: `work`, `personal`)을 정하고 기존 설정 하나를 가져올지 선택한 뒤, 새 터미널을 엽니다. `init`은 첫 설정용이며, 다시 실행하면 현재 설정만 보여줍니다.
@@ -76,7 +76,7 @@ npx claude-account-switch@latest init
 
 4. 터미널에서 `claude`를 실행하고 `work`를 선택합니다. 요청하면 로그인합니다. 예시의 `work`는 고른 프로필 이름으로 바꿉니다.
 
-원본 `~/.claude`와 `~/.claude.json`은 그대로 보존합니다. 기존 대상 데이터를 교체한 경우에도 이전 데이터는 성공 후 표시되는 백업 경로에 남깁니다. 대상 데이터 충돌이나 복사 중 대상 변경을 감지하면 이관을 중단합니다. macOS Keychain 인증은 복사하지 않으므로 설정을 가져와도 다시 로그인해야 할 수 있습니다. [자세한 이관 안내](https://ftery0.github.io/claude-account-switch/ko/guide/commands#기존-설정-가져오기)를 참고하세요.
+원본 `~/.claude`와 `~/.claude.json`은 그대로 보존합니다. 기존 대상 데이터를 교체한 경우에도 이전 데이터는 성공 후 표시되는 백업 경로에 남깁니다. 대상 데이터 충돌이나 복사 중 대상 변경을 감지하면 이관을 중단합니다. macOS Keychain 인증은 복사하지 않으므로 설정을 가져와도 다시 로그인해야 할 수 있습니다. [자세한 이관 안내](https://ftery0.github.io/ai-profile-switch/ko/guide/commands#기존-설정-가져오기)를 참고하세요.
 
 ## 프로필 이름 잘못 썼을 때
 
@@ -120,7 +120,7 @@ node bin/cli.mjs install-shell
 npm 배포 버전의 셸 명령어와 로컬 실행 파일을 설치·복구·갱신하려면 아래 명령을 사용하고 새 터미널을 엽니다.
 
 ```bash
-npx claude-account-switch@latest install-shell
+npx ai-profile-switch@latest install-shell
 ```
 
 `install-shell`은 프로필 추가나 로그인을 하지 않습니다. 기존 셸의 `cpf`에서 새 관리 명령을 쓰려면 먼저 갱신해야 합니다. 1.x 사용자도 로컬 실행 파일을 사용하도록 `install-shell`을 한 번 실행합니다. 기존 `claude-pick`은 Claude 실행 없이 활성 프로필을 고르는 명령으로 계속 지원합니다.
@@ -129,11 +129,11 @@ npx claude-account-switch@latest install-shell
 
 대화형 Claude 실행 시 하루 한 번 백그라운드에서 이 도구의 새 버전을 확인합니다. 검증된 호환 버전은 다음 실행부터 사용하며, 실행 중인 세션의 파일·계정 데이터·하네스 훅·셸 설정 파일을 덮어쓰지 않습니다. 오프라인이나 다운로드 실패 시 기존 버전으로 계속 실행합니다. 비대화형 실행에서는 자동 업데이트하지 않습니다.
 
-`CLAUDE_SWITCH_DISABLE_AUTO_UPDATE=1`로 자동 업데이트를 끌 수 있습니다. 배포 버전으로 즉시 갱신하려면 `npx claude-account-switch@latest update`를 실행하고, 설치 없이 확인하려면 `--check`를 붙입니다. 글로벌 npm 설치본과 셸 실행 파일은 별개이며, 자동 업데이트는 셸 실행 파일만 갱신합니다. 실행 중인 세션 보호를 위해 이전 실행 파일은 보존합니다.
+`CLAUDE_SWITCH_DISABLE_AUTO_UPDATE=1`로 자동 업데이트를 끌 수 있습니다. 배포 버전으로 즉시 갱신하려면 `npx ai-profile-switch@latest update`를 실행하고, 설치 없이 확인하려면 `--check`를 붙입니다. 글로벌 npm 설치본과 셸 실행 파일은 별개이며, 자동 업데이트는 셸 실행 파일만 갱신합니다. 실행 중인 세션 보호를 위해 이전 실행 파일은 보존합니다.
 
 ## 전체 CLI 명령어
 
-아래 명령은 저장소 루트에서 소스를 직접 실행합니다. 배포 버전을 쓸 때는 `node bin/cli.mjs`를 `npx claude-account-switch@latest`로 바꿉니다. 글로벌 설치를 했다면 `claude-account-switch`를 사용할 수 있습니다.
+아래 명령은 저장소 루트에서 소스를 직접 실행합니다. 배포 버전을 쓸 때는 `node bin/cli.mjs`를 `npx ai-profile-switch@latest`로 바꿉니다. 글로벌 설치를 했다면 `ai-profile-switch`를 사용할 수 있습니다.
 
 | 명령 | 용도 |
 | --- | --- |
@@ -153,7 +153,7 @@ npx claude-account-switch@latest install-shell
 | `node bin/cli.mjs mcp list` | 과거 MCP 이름과 전환 안내 조회 |
 | `node bin/cli.mjs rename --help` | 파일 변경 없이 해당 명령의 도움말 확인 |
 
-이관은 원본을 보존하며 데이터가 충돌하면 멈춥니다. 스킬·에이전트·규칙·훅·`CLAUDE.md`는 선택한 프로필에 보존됩니다. macOS Keychain 인증은 복사하지 않아 새 프로필에서 로그인할 수 있습니다. [이관·호환 안내](https://ftery0.github.io/claude-account-switch/ko/guide/commands)를 참고하세요.
+이관은 원본을 보존하며 데이터가 충돌하면 멈춥니다. 스킬·에이전트·규칙·훅·`CLAUDE.md`는 선택한 프로필에 보존됩니다. macOS Keychain 인증은 복사하지 않아 새 프로필에서 로그인할 수 있습니다. [이관·호환 안내](https://ftery0.github.io/ai-profile-switch/ko/guide/commands)를 참고하세요.
 
 2 버전부터 별도 MCP 편집기와 Claude 설치 관리를 없앴습니다. 공식 `claude mcp`와 Claude의 [업데이트 방식](https://code.claude.com/docs/en/setup#update-manually)을 사용합니다. 과거 MCP 파일은 그대로 보존하며 자동 업데이트는 이 도구만 대상으로 하며 Claude Code는 갱신하지 않습니다.
 

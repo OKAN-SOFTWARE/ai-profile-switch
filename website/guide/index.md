@@ -1,5 +1,5 @@
 ---
-title: Quick Start — claude-account-switch
+title: Quick Start — ai-profile-switch
 description: Profile setup and safe migration using your existing Claude installation.
 jsonLd: {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Should I run init if Claude is already installed?", "acceptedAnswer": {"@type": "Answer", "text": "Run it for first profile setup. Existing profiles are summarized without changes."}}, {"@type": "Question", "name": "Does it work after the npx cache is deleted?", "acceptedAnswer": {"@type": "Answer", "text": "The installed local runtime remains usable. Node.js and Claude Code are still required."}}, {"@type": "Question", "name": "Does migration copy the login?", "acceptedAnswer": {"@type": "Answer", "text": "File credentials are copied only into the selected profile. macOS Keychain is not copied; Claude checks authentication."}}]}
 ---
@@ -11,7 +11,7 @@ This tool adds profile selection and configuration import to Claude Code's [sepa
 With Node.js 18.19+ (18.x) or 20.10+ and Claude Code available, run:
 
 ```bash
-npx claude-account-switch@latest init
+npx ai-profile-switch@latest init
 ```
 
 1. Choose profile names and the active profile.
@@ -25,7 +25,7 @@ claude
 claude-pick
 ```
 
-Already initialized? `init` only shows the current setup. Run `npx claude-account-switch@latest install-shell` to repair or refresh shell integration.
+Already initialized? `init` only shows the current setup. Run `npx ai-profile-switch@latest install-shell` to repair or refresh shell integration.
 
 ## FAQ
 

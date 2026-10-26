@@ -1,5 +1,5 @@
 ---
-title: 작동 방식 — claude-account-switch
+title: 작동 방식 — ai-profile-switch
 description: 공유 범위, 프로필 파일과 인증의 역할.
 ---
 

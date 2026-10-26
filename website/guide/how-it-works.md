@@ -1,5 +1,5 @@
 ---
-title: How It Works — claude-account-switch
+title: How It Works — ai-profile-switch
 description: Shared scope, profile files and authentication responsibilities.
 ---
 

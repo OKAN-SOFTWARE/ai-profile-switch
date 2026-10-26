@@ -1,6 +1,6 @@
 import { defineConfig, type HeadConfig } from 'vitepress'
 
-const siteUrl = 'https://ftery0.github.io/claude-account-switch'
+const siteUrl = 'https://ftery0.github.io/ai-profile-switch'
 
 function guideSidebar(prefix = '') {
   return [
@@ -26,18 +26,18 @@ function guideSidebar(prefix = '') {
 }
 
 export default defineConfig({
-  title: 'claude-account-switch',
+  title: 'ai-profile-switch',
   description: 'Multi-account profile manager for Claude Code',
   cleanUrls: true,
-  base: '/claude-account-switch/',
+  base: '/ai-profile-switch/',
 
   sitemap: {
-    hostname: 'https://ftery0.github.io/claude-account-switch/',
+    hostname: 'https://ftery0.github.io/ai-profile-switch/',
   },
 
   head: [
     ['meta', { property: 'og:type', content: 'website' }],
-    ['meta', { property: 'og:site_name', content: 'claude-account-switch' }],
+    ['meta', { property: 'og:site_name', content: 'ai-profile-switch' }],
     ['meta', { property: 'og:image', content: `${siteUrl}/og-image.png` }],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
     ['meta', { name: 'twitter:image', content: `${siteUrl}/og-image.png` }],
@@ -76,13 +76,13 @@ export default defineConfig({
 
   themeConfig: {
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/ftery0/claude-account-switch' },
+      { icon: 'github', link: 'https://github.com/ftery0/ai-profile-switch' },
     ],
     search: {
       provider: 'local',
     },
     editLink: {
-      pattern: 'https://github.com/ftery0/claude-account-switch/edit/main/website/:path',
+      pattern: 'https://github.com/ftery0/ai-profile-switch/edit/main/website/:path',
     },
   },
 
