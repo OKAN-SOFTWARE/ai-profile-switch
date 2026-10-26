@@ -19,7 +19,7 @@ You need Node.js 18.19+ or 20.10+ and [Claude Code](https://code.claude.com/docs
 npx ai-profile-switch@latest init
 ```
 
-Choose profile names such as `work` and `personal`, then open a new terminal.
+Type profile names such as `work, personal`, then open a new terminal.
 
 ## Everyday use
 
@@ -27,14 +27,17 @@ Run these at the terminal prompt. If you are in the Claude chat, enter `/exit` f
 
 | Command | What it does |
 | --- | --- |
-| `claude` | Pick a profile and start Claude Code with it |
+| `claude` | Pick an account and start Claude Code with it |
 | `cpf` | Open a menu to switch, add, rename, or remove profiles |
 | `cpf work` | Make `work` active without starting Claude |
 | `cpf --list` | Show profiles and the active one |
 | `cpf add work2` | Create a profile. Then run `claude`, pick it, and sign in |
 | `cpf rename wrok2 work2` | Rename a profile. Close its Claude sessions first |
 | `cpf remove work2` | Delete a profile after confirmation |
+| `cpf language ko` | Show screens in Korean. `en` for English, `auto` to follow the system |
 
+- The `claude` picker shows each profile's email, plan, and the 5-hour and weekly usage Claude Code last saved. Press a number to pick at once, or Esc to cancel.
+- Screens appear in Korean or English, following your terminal language (`LANG`) or system language.
 - Switching applies to the next launch. Running sessions keep their account.
 - In scripts, `claude` uses the active profile without asking.
 - At a Bash or zsh prompt, `command claude` runs the original Claude without a profile.

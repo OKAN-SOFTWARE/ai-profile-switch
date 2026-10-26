@@ -21,6 +21,7 @@ Choose list, switch, add, rename, remove, or exit with ↑/↓ and Enter. The me
 | `cpf add work2` | Create `work2`; select it on the next `claude` launch and sign in |
 | `cpf rename wrok2 work2` | Rename `wrok2` to `work2` |
 | `cpf remove work2` | Delete `work2` after confirmation |
+| `cpf language ko` | Show screens in Korean; `en` for English, `auto` to follow the system |
 | `cpf --help` | Show command usage |
 
 Replace the example names with yours. A single argument is always a profile name: `cpf add`, `cpf rename`, `cpf remove`, and `cpf list` select profiles with those names. Listing uses `cpf --list` to avoid conflicting with a profile called `list`. Use explicit commands in scripts; the menu needs an interactive terminal.
