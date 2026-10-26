@@ -38,60 +38,26 @@ describe('color helpers', async () => {
   });
 });
 
-describe('box', async () => {
-  const { box } = await import('../src/lib/ui.mjs');
+describe('rail layout and meter', async () => {
+  const { meter, displayWidth, sym, stripAnsi } = await import('../src/lib/ui.mjs');
 
-  it('returns a string', () => {
-    assert.equal(typeof box(['hello']), 'string');
+  it('always prints the percentage next to the bar', () => {
+    for (const value of [0, 28, 50, 80, 100]) {
+      const text = stripAnsi(meter(value));
+      assert.ok(text.endsWith(`${String(value).padStart(3)}%`), text);
+      assert.equal([...text.split(' ')[0]].length, 10);
+    }
   });
 
-  it('wraps content in box characters', () => {
-    const result = box(['hello']);
-    const lines = result.split('\n');
-    assert.equal(lines.length, 3); // top + content + bottom
+  it('fills the bar in proportion to the value', () => {
+    const text = stripAnsi(meter(30));
+    assert.equal(text.split(sym.barOn).length - 1, 3);
   });
 
-  it('handles multiple lines', () => {
-    const result = box(['line 1', 'line 2', 'line 3']);
-    const lines = result.split('\n');
-    assert.equal(lines.length, 5); // top + 3 content + bottom
-  });
-
-  it('pads shorter lines to match longest', () => {
-    const result = box(['short', 'much longer line']);
-    // Both content lines should have same visual width
-    const lines = result.split('\n');
-    assert.equal(lines[1].length, lines[2].length);
-  });
-
-  it('handles content with ANSI codes (width calculation strips ANSI)', () => {
-    const result = box(['\x1b[1mhello\x1b[0m', 'world']);
-    // Should not crash and should produce valid box
-    const lines = result.split('\n');
-    assert.equal(lines.length, 4); // top + 2 content + bottom
-  });
-
-  it('handles empty string content', () => {
-    assert.doesNotThrow(() => box(['']));
-  });
-
-  it('single character content', () => {
-    const result = box(['x']);
-    assert.ok(result.includes('x'));
-  });
-});
-
-describe('stripAnsi (via box)', async () => {
-  const { box } = await import('../src/lib/ui.mjs');
-
-  it('box correctly measures width of ANSI-colored text', () => {
-    // If stripAnsi is broken, the box would have wrong padding
-    const plain = box(['hello']);
-    const colored = box(['\x1b[31mhello\x1b[0m']);
-    // Both should have same top border length (same visual width)
-    const plainTop = plain.split('\n')[0];
-    const coloredTop = colored.split('\n')[0];
-    assert.equal(plainTop.length, coloredTop.length);
+  it('counts Hangul as two columns and ignores color codes', () => {
+    assert.equal(displayWidth('work'), 4);
+    assert.equal(displayWidth('계정'), 4);
+    assert.equal(displayWidth('\x1b[1m계정\x1b[0m a'), 6);
   });
 });
 
@@ -132,6 +98,14 @@ describe('output functions', async () => {
     for (const [fn, stream] of [[success, process.stdout], [warn, process.stdout], [error, process.stderr], [info, process.stdout]]) {
       assert.ok(captureOutput(stream, () => fn('')).endsWith(' \n'));
     }
+  });
+
+  it('error prints next-step hints under the message', () => {
+    const output = captureOutput(process.stderr, () => error('missing', [
+      { label: 'Profiles:', text: 'work, personal' },
+      { label: 'To create it:', command: 'cpf add side' },
+    ]));
+    assert.match(output, /missing\n {4}Profiles: work, personal\n {4}To create it: cpf add side\n$/);
   });
 
   it('preserves special characters in its output', () => {

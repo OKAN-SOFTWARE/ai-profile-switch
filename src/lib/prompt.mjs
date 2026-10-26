@@ -1,6 +1,7 @@
 import { createInterface, emitKeypressEvents } from 'node:readline';
 import { PassThrough } from 'node:stream';
-import { color, cursorControl, sym } from './ui.mjs';
+import { color, cursorControl, displayWidth, sym } from './ui.mjs';
+import { t } from './i18n.mjs';
 
 function rl() {
   return createInterface({ input: process.stdin, output: process.stdout });
@@ -29,17 +30,18 @@ function readKeys(onKey) {
   };
 }
 
-export async function text(message, defaultVal) {
-  const suffix = defaultVal !== undefined ? color.dim(` (${defaultVal})`) : '';
+// hint is shown only while asking, such as "now: side · empty to cancel".
+export async function text(message, defaultVal, hint) {
+  const suffix = hint ? `  ${color.dim(hint)}` : defaultVal !== undefined ? color.dim(` (${defaultVal})`) : '';
   const r = rl();
   const cursor = cursorControl();
   return new Promise((resolve) => {
-    r.question(`${color.cyan('?')} ${message}${suffix}\n  ${color.dim(sym.arrow)} `, (answer) => {
+    r.question(`${color.cyan(sym.step)}  ${message}${suffix}\n${color.dim(sym.rail)}  ${color.dim(sym.arrow)} `, (answer) => {
       r.close();
       const result = answer.trim() || defaultVal || '';
-      // Replace 2-line prompt with single completed line: ✓ message … answer
+      // Replace 2-line prompt with single completed line: ◇ message … answer
       if (cursor.enabled) {
-        process.stdout.write(`${cursor.up(2)}\r${cursor.clearLine}${color.green(sym.check)} ${message} ${color.dim(sym.dots)} ${color.cyan(result)}\n${cursor.clearDown}`);
+        process.stdout.write(`${cursor.up(2)}\r${cursor.clearLine}${color.green(sym.stepDone)}  ${message} ${color.dim(sym.dots)} ${result ? color.cyan(result) : color.dim(t('prompt.cancelled'))}\n${cursor.clearDown}`);
       }
       resolve(result);
     });
@@ -63,11 +65,12 @@ export async function confirm(message, defaultVal = true) {
     const cursor = cursorControl();
 
     const render = (final = false) => {
-      const prefix = final ? color.green(sym.check) : color.cyan('?');
+      const prefix = final ? color.green(sym.stepDone) : color.cyan(sym.step);
       const sep = final ? color.dim(` ${sym.dots} `) : color.dim(` ${sym.arrow} `);
-      const no  = !selected ? color.cyan('No')  : color.dim('No');
-      const yes =  selected ? color.cyan('Yes') : color.dim('Yes');
-      process.stdout.write(`\r${cursor.clearLine}${prefix} ${message}${sep}${no} ${color.dim('/')} ${yes}`);
+      const no  = !selected ? color.cyan(t('prompt.no'))  : color.dim(t('prompt.no'));
+      const yes =  selected ? color.cyan(t('prompt.yes')) : color.dim(t('prompt.yes'));
+      const answer = final ? (selected ? yes : no) : `${no} ${color.dim('/')} ${yes}`;
+      process.stdout.write(`\r${cursor.clearLine}${prefix}  ${message}${sep}${answer}`);
     };
 
     render();
@@ -82,7 +85,8 @@ export async function confirm(message, defaultVal = true) {
       } else if (character === 'n' || character === 'N') {
         selected = false;
         render();
-      } else if (key.name === 'return' || key.name === 'enter') {
+      } else if (key.name === 'return' || key.name === 'enter' || key.name === 'escape') {
+        if (key.name === 'escape') selected = false;
         stop();
         render(true);
         process.stdout.write('\n');
@@ -96,52 +100,87 @@ export async function confirm(message, defaultVal = true) {
   });
 }
 
-export async function select(message, choices, { output = process.stdout, initial = 0 } = {}) {
+// Choices are strings or { label, value, hint, details }. hint sits after the label,
+// details are extra dim lines under it. numbered adds 1-9 keys that pick at once.
+// body lines sit between the question and the choices; back says Esc goes back.
+export async function select(message, choices, {
+  output = process.stdout, initial = 0, numbered = false, done, body = [], back = false,
+} = {}) {
+  const items = choices.map(choice => (typeof choice === 'string' ? { label: choice, value: choice } : choice));
   return new Promise((resolve) => {
-    let selected = Math.max(0, Math.min(initial, choices.length - 1));
-    let rendered = false;
+    let selected = Math.max(0, Math.min(initial, items.length - 1));
+    let height = 0;
     const cursor = cursorControl(output);
+    const rail = color.dim(sym.rail);
+    const indent = ' '.repeat(numbered ? 5 : 2);
+    const keys = numbered && items.length > 1 && items.length <= 9
+      ? t(back ? 'prompt.keysNumberedBack' : 'prompt.keysNumbered', { arrows: sym.arrows, max: items.length })
+      : t(back ? 'prompt.keysBack' : 'prompt.keys', { arrows: sym.arrows });
+
+    const rows = () => {
+      const lines = [];
+      items.forEach((item, i) => {
+        const number = numbered ? `${i + 1}  ` : '';
+        const head = i === selected
+          ? color.cyan(`${sym.cursor} ${number}${item.label}`)
+          : `  ${numbered ? `${color.dim(String(i + 1))}  ` : ''}${item.label}`;
+        lines.push(`${rail}  ${head}${item.hint ? `  ${item.hint}` : ''}`);
+        for (const detail of item.details ?? []) lines.push(`${rail}  ${indent}${detail}`);
+        if (item.details?.length) lines.push(rail);
+      });
+      lines.push(`${rail}  ${color.dim(keys)}`, color.dim(sym.railEnd));
+      return lines;
+    };
+
+    // A line wider than the window wraps, so count the screen rows it really takes.
+    const screenRows = lines => lines.reduce((sum, line) => sum
+      + Math.max(1, Math.ceil(displayWidth(line) / (output.columns || Infinity))), 0);
+    const header = [`${color.cyan(sym.step)}  ${message}`, ...body.map(line => `${rail}  ${line}`)];
 
     const render = () => {
-      if (rendered) {
-        output.write(cursor.up(choices.length));
+      if (height) output.write(cursor.up(height));
+      const lines = rows();
+      for (const line of lines) output.write(`${cursor.clearLine}${line}\n`);
+      height = screenRows(lines);
+    };
+
+    const finish = (value, summary) => {
+      stop();
+      if (cursor.enabled) {
+        output.write(`${cursor.up(height + screenRows(header))}\r${cursor.clearLine}${summary}\n${cursor.clearDown}`);
       }
-      choices.forEach((choice, i) => {
-        const label = typeof choice === 'string' ? choice : choice.label;
-        const prefix = i === selected ? color.cyan(`  ${sym.cursor} `) : '    ';
-        output.write(`${cursor.clearLine}${prefix}${label}\n`);
-      });
-      rendered = true;
+      resolve(value);
+    };
+
+    const pick = () => {
+      const item = items[selected];
+      const summary = done ? done(item.value) : `${message} ${color.dim(sym.dots)} ${color.cyan(item.label.trim())}`;
+      finish(item.value, `${color.green(sym.stepDone)}  ${summary}`);
     };
 
     if (!process.stdin.isTTY) {
-      // Non-interactive: pick first choice without rendering menu
-      resolve(typeof choices[selected] === 'string' ? choices[selected] : choices[selected].value);
+      // Non-interactive: pick the initial choice without rendering the menu
+      resolve(items[selected].value);
       return;
     }
 
-    output.write(`${color.cyan('?')} ${message}\n`);
+    for (const line of header) output.write(`${line}\n`);
     render();
 
     const stop = readKeys((character, key) => {
       if (key.name === 'up') {
-        selected = (selected - 1 + choices.length) % choices.length;
+        selected = (selected - 1 + items.length) % items.length;
         render();
       } else if (key.name === 'down') {
-        selected = (selected + 1) % choices.length;
+        selected = (selected + 1) % items.length;
         render();
+      } else if (numbered && /^[1-9]$/.test(character ?? '') && Number(character) <= items.length) {
+        selected = Number(character) - 1;
+        pick();
       } else if (key.name === 'return' || key.name === 'enter') {
-        stop();
-        const choice = choices[selected];
-        const value = typeof choice === 'string' ? choice : choice.value;
-        if (cursor.enabled) {
-          output.write(`${cursor.up(choices.length + 1)}\r${cursor.clearLine}${color.green(sym.check)} ${message} ${color.dim(sym.dots)} ${color.cyan(value)}\n${cursor.clearDown}`);
-        }
-        resolve(value);
-      } else if (key.ctrl && key.name === 'c') {
-        stop();
-        output.write('\n');
-        resolve(null);
+        pick();
+      } else if (key.name === 'escape' || (key.ctrl && key.name === 'c')) {
+        finish(null, `${color.dim(sym.stepDone)}  ${message} ${color.dim(t('prompt.cancelled'))}`);
       }
     });
   });

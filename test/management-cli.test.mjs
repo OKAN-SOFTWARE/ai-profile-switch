@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, lstatSync, readlinkSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { delimiter, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const cli = fileURLToPath(new URL('../bin/cli.mjs', import.meta.url));
@@ -105,27 +105,31 @@ describe('cpf management commands', () => {
   it('recovers from invalid input and completes add, rename, switch and confirmed deletion in one menu session', async () => {
     const context = fixture();
     const replies = [
-      ['? Manage profiles', '\x1b[B\x1b[B\r'],
+      ['What do you want to do?', '\x1b[B\x1b[B\r'],
       ['New profile name (empty to cancel):', 'Work\n'],
-      ['? Manage profiles', '\x1b[B\x1b[B\r'],
+      ['What do you want to do?', '\x1b[B\x1b[B\r'],
       ['New profile name (empty to cancel):', 'work\n'],
-      ['? Manage profiles', '\x1b[B\x1b[B\r'],
+      ['What do you want to do?', '\x1b[B\x1b[B\r'],
       ['New profile name (empty to cancel):', '\n'],
-      ['? Manage profiles', '\x1b[B\x1b[B\r'],
+      ['What do you want to do?', '\x1b[B\x1b[B\r'],
       ['New profile name (empty to cancel):', 'work2\n'],
-      ['? Manage profiles', '\x1b[B\x1b[B\x1b[B\r'],
-      ['? Choose a profile:', '\x1b[B\r'],
-      ['New name (empty to cancel):', 'personal\n'],
-      ['Rename "work2" to "personal"?', 'y\r'],
-      ['? Manage profiles', '\r'],
-      ['? Choose a profile:', '\x1b[B\r'],
-      ['? Manage profiles', '\x1b[B\x1b[B\x1b[B\x1b[B\r'],
-      ['? Choose a profile:', '\r'],
+      ['What do you want to do?', '\x1b[B\r'],
+      ['Which profile do you want to manage?', '\x1b[B\r'],
+      ['work2 profile', '\x1b[B\r'],
+      ['New name', 'personal\n'],
+      ['Rename work2 to personal?', 'y\r'],
+      ['personal profile', '\x1b[B\x1b[B\x1b[B\x1b[B\r'],
+      ['Which profile do you want to manage?', '\x1b'],
+      ['What do you want to do?', '\r'],
+      ['Which profile do you want to switch to?', '\x1b[B\r'],
+      ['What do you want to do?', '\x1b[B\r'],
+      ['Which profile do you want to manage?', '\r'],
+      ['personal profile', '\x1b[B\x1b[B\x1b[B\r'],
       ['Delete profile "personal"?', '\r'],
-      ['? Manage profiles', '\x1b[B\x1b[B\x1b[B\x1b[B\r'],
-      ['? Choose a profile:', '\r'],
+      ['personal profile', '\x1b[B\x1b[B\x1b[B\r'],
       ['Delete profile "personal"?', 'y\r'],
-      ['? Manage profiles', '\x1b[A\r'],
+      ['Which profile do you want to manage?', '\x1b'],
+      ['What do you want to do?', '\x1b[A\r'],
     ];
     const script = "Object.defineProperty(process.stdin,'isTTY',{value:true}); process.stdin.setRawMode=()=>{}; const {run}=await import(" + JSON.stringify(indexURL) + "); await run(['manage']); console.log('MANAGEMENT_DONE');";
     const output = await new Promise((resolve, reject) => {
@@ -152,9 +156,81 @@ describe('cpf management commands', () => {
     assert.match(output.stderr, /Profile "work" already exists/);
     assert.match(output.stdout, /Cancelled/);
     assert.match(output.stdout, /Renamed profile: work2/);
+    assert.equal(output.stdout.split('Close Claude windows using work2').length - 1, 1, 'rename warns once');
+    assert.match(output.stdout, /Signed in +Not signed in yet/);
     assert.match(output.stdout, /Removed profile: personal/);
     assert.deepEqual(JSON.parse(readFileSync(context.meta)).profiles, ['work']);
     assert.equal(JSON.parse(readFileSync(context.meta)).activeProfile, 'work');
     assert.equal(readFileSync(join(context.profiles, 'work', 'history.jsonl'), 'utf8'), 'keep history\n');
+  });
+});
+
+describe('rename and sign-in commands', () => {
+  function twoProfiles() {
+    const context = fixture();
+    mkdirSync(join(context.profiles, 'side'));
+    writeFileSync(context.meta, JSON.stringify({ version: 1, activeProfile: 'work', shareSettings: true, profiles: ['work', 'side'] }));
+    return context;
+  }
+
+  it('refuses a taken name before warning and suggests another', () => {
+    const context = twoProfiles();
+    const before = snapshot(context.directory);
+    const result = run(['rename', 'side', 'work'], context);
+    assert.equal(result.status, 1);
+    assert.doesNotMatch(result.stdout, /Close Claude windows/);
+    assert.match(result.stderr, /Profile "work" already exists\n +Profiles: work, side\n +Use another name: cpf rename side work-2/);
+    assert.deepEqual(snapshot(context.directory), before);
+  });
+
+  it('warns once, renames, and says what comes next', () => {
+    const context = twoProfiles();
+    const result = run(['rename', 'side', 'studio'], context);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stdout.split('Close Claude windows using side').length - 1, 1);
+    assert.match(result.stdout, /Renamed profile: side → studio/);
+    assert.match(result.stdout, /Sign-in, history, and settings are kept/);
+    assert.match(result.stdout, /Next time, pick studio in the claude list/);
+  });
+
+  // The fake claude records how it was called and writes the account Claude Code would save.
+  function withFakeClaude(context, exit = '') {
+    const bin = join(context.directory, 'fake-bin');
+    mkdirSync(bin);
+    writeFileSync(join(bin, 'claude'), `#!/bin/sh
+printf '%s\\n' "$*" > "$CLAUDE_CONFIG_DIR/../login-args"
+printf '%s' "$CLAUDE_CONFIG_DIR" > "$CLAUDE_CONFIG_DIR/../login-dir"
+${exit ? `exit ${exit}` : ''}
+printf '{"oauthAccount":{"emailAddress":"new@studio.test","organizationType":"claude_pro"}}' > "$CLAUDE_CONFIG_DIR/.claude.json"
+`, { mode: 0o755 });
+    return { ...context, env: { ...context.env, PATH: [bin, context.env.PATH].join(delimiter) } };
+  }
+
+  it('signs only that profile in with claude auth login', { skip: process.platform === 'win32' }, () => {
+    const context = withFakeClaude(twoProfiles());
+    writeFileSync(join(context.profiles, 'side', '.claude.json'), JSON.stringify({ oauthAccount: { emailAddress: 'old@studio.test', organizationType: 'claude_max' } }));
+    const result = run(['login', 'side'], context);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(readFileSync(join(context.profiles, 'login-args'), 'utf8'), 'auth login\n');
+    assert.equal(readFileSync(join(context.profiles, 'login-dir'), 'utf8'), join(context.profiles, 'side'));
+    assert.match(result.stdout, /Signed in now: old@studio\.test · Max/);
+    assert.match(result.stdout, /side is now signed in as new@studio\.test · Pro/);
+    assert.ok(!existsSync(join(context.profiles, 'work', '.claude.json')), 'other profiles are untouched');
+  });
+
+  it('reports a sign-in that did not finish', { skip: process.platform === 'win32' }, () => {
+    const context = withFakeClaude(twoProfiles(), '3');
+    const result = run(['manage', 'login', 'side'], context);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /Sign-in did not finish \(exit code 3\)/);
+    assert.ok(!existsSync(join(context.profiles, 'side', '.claude.json')));
+  });
+
+  it('rejects an unknown profile before starting Claude', () => {
+    const context = withFakeClaude(twoProfiles());
+    const result = run(['login', 'nope'], context);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /No profile named "nope"/);
+    assert.ok(!existsSync(join(context.profiles, 'login-args')));
   });
 });

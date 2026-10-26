@@ -1,9 +1,13 @@
-// ANSI colors, terminal capability detection, and box-drawing helpers.
+// ANSI colors, terminal capability detection, and the left-rail layout helpers.
 // Single source for any module that writes to stdout/stderr.
 
-export const hasColor = Boolean(process.stdout.isTTY || process.env.FORCE_COLOR)
-  && !process.env.NO_COLOR
-  && process.env.TERM !== 'dumb';
+const colorAllowed = !process.env.NO_COLOR && process.env.TERM !== 'dumb';
+export let hasColor = Boolean(process.stdout.isTTY || process.env.FORCE_COLOR) && colorAllowed;
+
+// The claude picker draws on stderr while its stdout is captured by the shell.
+export function colorFor(stream) {
+  hasColor = Boolean(stream.isTTY || process.env.FORCE_COLOR) && colorAllowed;
+}
 
 // On legacy Windows consoles (cmd.exe without UTF-8 codepage), Unicode box
 // characters may not render.  Detect via the WT_SESSION env var (set by
@@ -15,17 +19,16 @@ export const supportsUnicode = Boolean(
 );
 
 const ESC = '\x1b[';
-const RESET = hasColor ? `${ESC}0m` : '';
 const c = (code) => hasColor ? `${ESC}${code}m` : '';
 
 export const color = {
-  bold:    (s) => `${c('1')}${s}${RESET}`,
-  dim:     (s) => `${c('2')}${s}${RESET}`,
-  green:   (s) => `${c('32')}${s}${RESET}`,
-  yellow:  (s) => `${c('33')}${s}${RESET}`,
-  blue:    (s) => `${c('34')}${s}${RESET}`,
-  cyan:    (s) => `${c('36')}${s}${RESET}`,
-  red:     (s) => `${c('31')}${s}${RESET}`,
+  bold:    (s) => `${c('1')}${s}${c('0')}`,
+  dim:     (s) => `${c('2')}${s}${c('0')}`,
+  green:   (s) => `${c('32')}${s}${c('0')}`,
+  yellow:  (s) => `${c('33')}${s}${c('0')}`,
+  blue:    (s) => `${c('34')}${s}${c('0')}`,
+  cyan:    (s) => `${c('36')}${s}${c('0')}`,
+  red:     (s) => `${c('31')}${s}${c('0')}`,
 };
 
 export function cursorControl(output = process.stdout) {
@@ -50,23 +53,16 @@ export const sym = {
   bulletOn:  supportsUnicode ? '●' : '*',
   bulletOff: supportsUnicode ? '○' : 'o',
   dash:      supportsUnicode ? '──' : '--',
+  arrows:    supportsUnicode ? '↑↓' : 'Up/Down',
+  // Left rail that groups one flow: ┌ start, │ body, ◆ question, ◇ answered, └ end.
+  railTop:   supportsUnicode ? '┌' : '+',
+  rail:      supportsUnicode ? '│' : '|',
+  railEnd:   supportsUnicode ? '└' : '`',
+  step:      supportsUnicode ? '◆' : '*',
+  stepDone:  supportsUnicode ? '◇' : 'o',
+  barOn:     supportsUnicode ? '▰' : '#',
+  barOff:    supportsUnicode ? '▱' : '-',
 };
-
-const BOX_TL = supportsUnicode ? '╭' : '+';
-const BOX_TR = supportsUnicode ? '╮' : '+';
-const BOX_BL = supportsUnicode ? '╰' : '+';
-const BOX_BR = supportsUnicode ? '╯' : '+';
-const BOX_H  = supportsUnicode ? '─' : '-';
-const BOX_V  = supportsUnicode ? '│' : '|';
-
-export function box(lines) {
-  const maxLen = Math.max(...lines.map(stripAnsi).map(l => l.length));
-  const pad = (s) => s + ' '.repeat(maxLen - stripAnsi(s).length);
-  const top    = `  ${BOX_TL}${BOX_H.repeat(maxLen + 2)}${BOX_TR}`;
-  const bottom = `  ${BOX_BL}${BOX_H.repeat(maxLen + 2)}${BOX_BR}`;
-  const body = lines.map(l => `  ${BOX_V} ${pad(l)} ${BOX_V}`).join('\n');
-  return `${top}\n${body}\n${bottom}`;
-}
 
 export function success(msg) {
   process.stdout.write(`  ${color.green(sym.check)} ${msg}\n`);
@@ -76,8 +72,31 @@ export function warn(msg) {
   process.stdout.write(`  ${color.yellow(sym.warn)} ${msg}\n`);
 }
 
-export function error(msg) {
+// Hints are { label, text } or { label, command } lines telling what to do next.
+export function error(msg, hints = []) {
   process.stderr.write(`  ${color.red(sym.cross)} ${msg}\n`);
+  for (const hint of hints) {
+    process.stderr.write(`    ${color.dim(hint.label)} ${hint.command ? color.cyan(hint.command) : hint.text}\n`);
+  }
+}
+
+export function userError(message, hints = []) {
+  return Object.assign(new Error(message), { hints });
+}
+
+export function intro(title, note = '', output = process.stdout) {
+  output.write(`${color.dim(sym.railTop)}  ${color.bold(title)}${note ? `  ${color.dim(note)}` : ''}\n${color.dim(sym.rail)}\n`);
+}
+
+export function outro(message, output = process.stdout) {
+  output.write(`${color.dim(sym.railEnd)}  ${message}\n`);
+}
+
+// The number is always printed so the bar never relies on color alone.
+export function meter(percent, width = 10) {
+  const filled = Math.round(percent / 100 * width);
+  const paint = percent >= 80 ? color.red : percent >= 50 ? color.yellow : color.green;
+  return `${paint(sym.barOn.repeat(filled))}${color.dim(sym.barOff.repeat(width - filled))} ${String(percent).padStart(3)}%`;
 }
 
 export function info(msg) {
@@ -86,4 +105,10 @@ export function info(msg) {
 
 export function stripAnsi(s) {
   return s.replace(/\x1b\[[0-9;]*m/g, '');
+}
+
+// Hangul and other wide characters take two terminal columns.
+export function displayWidth(text) {
+  return [...stripAnsi(text)].reduce((width, char) => width
+    + (/[\u1100-\u115f\u2e80-\ua4cf\uac00-\ud7a3\uf900-\ufaff\uff00-\uff60]/.test(char) ? 2 : 1), 0);
 }

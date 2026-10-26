@@ -21,6 +21,8 @@ description: 프로필 관리, 충돌 없는 이관과 2 버전 호환 안내.
 | `cpf add work2` | `work2` 추가; 다음 `claude`에서 고른 뒤 로그인 |
 | `cpf rename wrok2 work2` | `wrok2`를 `work2`로 이름 변경 |
 | `cpf remove work2` | 확인 후 `work2` 삭제 |
+| `cpf login work2` | `claude auth login` 으로 `work2` 만 다른 Claude 계정에 다시 로그인 |
+| `cpf language ko` | 화면을 한국어로; `en` 은 영어, `auto` 는 시스템 설정을 따름 |
 | `cpf --help` | 명령어 사용법 확인 |
 
 예시의 이름은 본인의 프로필 이름으로 바꿉니다. 인자가 하나이면 항상 프로필 이름으로 해석합니다. `cpf add`, `cpf rename`, `cpf remove`, `cpf list`는 각각 그 이름의 프로필로 전환합니다. `list`라는 프로필과 충돌하지 않도록 목록 조회는 `cpf --list`를 사용합니다. 메뉴는 대화형 터미널이 필요하므로 스크립트에서는 동작을 지정한 명령을 사용합니다.

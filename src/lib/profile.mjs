@@ -11,7 +11,8 @@ import {
 } from './constants.mjs';
 import { createHash } from 'node:crypto';
 import { addProfileToMeta, removeProfileFromMeta, readMeta, writeMeta } from './config.mjs';
-import { warn } from './ui.mjs';
+import { userError, warn } from './ui.mjs';
+import { t } from './i18n.mjs';
 
 export function pathExists(path) {
   try { lstatSync(path); return true; } catch (err) {
@@ -31,23 +32,21 @@ export function createLink(target, link, isDir, copySource = resolve(dirname(lin
   } catch (err) {
     if (!IS_WINDOWS || isDir || !['EPERM', 'ENOTSUP'].includes(err.code)) throw err;
     copyFileSync(copySource, link);
-    warn(`Symlink unavailable: copied shared file instead (${link}).`);
-    warn('Enable Windows Developer Mode for full shared-settings sync.');
+    warn(t('profile.copiedInstead', { link }));
+    warn(t('profile.devMode'));
   }
 }
 
 export function validateProfileName(name) {
-  if (!name) return 'Profile name cannot be empty';
+  if (!name) return t('profile.empty');
   if (name.length > PROFILE_NAME_MAX_LENGTH) {
-    return `Profile name must be ${PROFILE_NAME_MAX_LENGTH} characters or fewer`;
+    return t('profile.tooLong', { max: PROFILE_NAME_MAX_LENGTH });
   }
-  if (RESERVED_NAMES.includes(name)) return `"${name}" is a reserved name`;
+  if (RESERVED_NAMES.includes(name)) return t('profile.reserved', { name });
   if (IS_WINDOWS && /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(name)) {
-    return `"${name}" is a reserved Windows device name`;
+    return t('profile.reservedWindows', { name });
   }
-  if (!PROFILE_NAME_REGEX.test(name)) {
-    return 'Only lowercase letters, numbers, and hyphens allowed (must start/end with letter or number)';
-  }
+  if (!PROFILE_NAME_REGEX.test(name)) return t('profile.invalidName');
   return null;
 }
 
@@ -87,13 +86,16 @@ export function assertRegisteredProfile(name) {
   const error = validateProfileName(name);
   if (error) throw new Error(error);
   const meta = readMeta();
-  if (!meta.profiles.includes(name)) throw new Error(`Profile "${name}" is not registered`);
-  const dir = profileDir(name);
-  if (!pathExists(dir)) throw new Error(`Profile "${name}" directory is missing`);
-  const entry = lstatSync(dir);
-  if (entry.isSymbolicLink() || !entry.isDirectory()) {
-    throw new Error(`Profile "${name}" must be a directory, not a symbolic link or file`);
+  if (!meta.profiles.includes(name)) {
+    throw userError(t('profile.notFound', { name }), [
+      ...(meta.profiles.length ? [{ label: t('hint.profiles'), text: meta.profiles.join(', ') }] : []),
+      { label: t('hint.create'), command: `cpf add ${name}` },
+    ]);
   }
+  const dir = profileDir(name);
+  if (!pathExists(dir)) throw new Error(t('profile.missingDir', { name }));
+  const entry = lstatSync(dir);
+  if (entry.isSymbolicLink() || !entry.isDirectory()) throw new Error(t('profile.notDirectory', { name }));
   return meta;
 }
 
@@ -103,16 +105,25 @@ export function removeProfile(name) {
   removeProfileFromMeta(name);
 }
 
-export function renameProfile(oldName, newName) {
+// Checks a rename without changing anything, so callers can warn only when it can go ahead.
+export function checkRename(oldName, newName) {
   const meta = assertRegisteredProfile(oldName);
   const error = validateProfileName(newName);
   if (error) throw new Error(error);
+  if (oldName !== newName && (meta.profiles.includes(newName) || pathExists(profileDir(newName)))) {
+    throw userError(t('profile.exists', { name: newName }), [
+      { label: t('hint.profiles'), text: meta.profiles.join(', ') },
+      { label: t('hint.otherName'), command: `cpf rename ${oldName} ${newName}-2` },
+    ]);
+  }
+  return meta;
+}
+
+export function renameProfile(oldName, newName) {
+  const meta = checkRename(oldName, newName);
   if (oldName === newName) return false;
   const oldDir = profileDir(oldName);
   const newDir = profileDir(newName);
-  if (meta.profiles.includes(newName) || pathExists(newDir)) {
-    throw new Error(`Profile "${newName}" already exists`);
-  }
 
   renameSync(oldDir, newDir);
   try {

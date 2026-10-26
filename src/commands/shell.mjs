@@ -6,7 +6,9 @@ import { getActiveProfile, setActiveProfile } from '../lib/config.mjs';
 import { HOME, IS_WINDOWS } from '../lib/constants.mjs';
 import { installAllShells } from '../lib/shell.mjs';
 import { listProfiles, profileDir, assertRegisteredProfile } from '../lib/profile.mjs';
-import { success, warn } from '../lib/ui.mjs';
+import { color, colorFor, intro, meter, outro, success, sym, userError, warn } from '../lib/ui.mjs';
+import { accountInfo } from '../lib/account.mjs';
+import { relativeTime, t } from '../lib/i18n.mjs';
 import { syncShared } from '../lib/shared.mjs';
 import { reportConflicts } from './share.mjs';
 import * as prompt from '../lib/prompt.mjs';
@@ -37,7 +39,7 @@ export async function shell(argv = []) {
     case 'refresh':
       if (args.length) throw new Error('Usage: shell refresh');
       installAllShells();
-      success('Shell integration refreshed.');
+      success(t('shell.refreshed'));
       return;
     default:
       throw new Error('Usage: shell <launch|use|pick|refresh>');
@@ -45,7 +47,7 @@ export async function shell(argv = []) {
 }
 
 async function launch(args, selected) {
-  const profile = selected ?? await selectProfile();
+  const profile = selected ?? await selectProfile({ launching: true });
   if (!profile) {
     process.exitCode = 130;
     return;
@@ -53,15 +55,16 @@ async function launch(args, selected) {
   assertRegisteredProfile(profile);
   const bin = resolveClaudeBinary();
   if (!bin) {
-    console.error('Claude Code executable not found. See https://code.claude.com/docs/en/setup');
+    console.error(`${t('launch.notFound')} ${t('launch.install')} https://code.claude.com/docs/en/setup`);
     process.exitCode = 127;
     return;
   }
   scheduleSelfUpdate();
   if (getActiveProfile() !== profile) setActiveProfile(profile);
   // Sharing is a convenience; a broken link must not stop Claude from starting.
-  try { reportConflicts(syncShared([profile])); } catch (err) { warn(`Shared items not linked: ${err.message}`); }
-  process.stderr.write(`[ai-profile-switch] Profile: ${profile}\n`);
+  try { reportConflicts(syncShared([profile])); } catch (err) { warn(t('launch.sharedFailed', { message: err.message })); }
+  // The picker already told a person which account starts; logs still get a plain line.
+  if (!process.stderr.isTTY) process.stderr.write(`[ai-profile-switch] Profile: ${profile}\n`);
   const cmd = bin.endsWith('.js') ? process.execPath : bin;
   const childArgs = bin.endsWith('.js') ? [bin, ...args] : args;
   const result = await new Promise(resolve => {
@@ -80,7 +83,7 @@ async function launch(args, selected) {
     };
     child.once('error', err => {
       cleanup();
-      console.error(`Could not start Claude Code: ${err.message}`);
+      console.error(t('launch.startFailed', { message: err.message }));
       resolve(1);
     });
     child.once('close', (code, signal) => {
@@ -94,30 +97,88 @@ async function launch(args, selected) {
 function useProfile(name) {
   assertRegisteredProfile(name);
   if (getActiveProfile() !== name) setActiveProfile(name);
-  success(`Switched to profile: ${name}`);
+  success(t('use.switched', { profile: name }));
 }
 
+// The claude shell function runs `pick --print` and then launches the printed profile.
 async function pickProfile(printOnly) {
-  const profile = await selectProfile();
+  const profile = await selectProfile({ launching: printOnly });
   if (!profile) {
     process.exitCode = 130;
     return;
   }
   if (getActiveProfile() !== profile) setActiveProfile(profile);
   if (printOnly) process.stdout.write(profile + '\n');
-  else success(`Switched to profile: ${profile}`);
 }
 
-async function selectProfile() {
+export function accountSummary({ email, plan }) {
+  return [email, plan].filter(Boolean).join(' · ');
+}
+
+export function usageLine({ usage }) {
+  if (!usage) return color.dim(t('account.noUsage'));
+  const parts = [];
+  if (usage.fiveHour !== null) parts.push(`${t('account.fiveHour')} ${meter(usage.fiveHour)}`);
+  if (usage.weekly !== null) parts.push(`${t('account.weekly')} ${meter(usage.weekly)}`);
+  if (usage.savedAt) parts.push(color.dim(t('account.savedAt', { time: relativeTime(usage.savedAt) })));
+  return parts.join('   ');
+}
+
+// One picker row per profile: name, in use or last used, then account and usage lines.
+export function profileChoices(profiles, active) {
+  const width = Math.max(...profiles.map(name => name.length));
+  return profiles.map(name => profileChoice(name, active, width));
+}
+
+function profileChoice(name, active, width) {
+  const account = accountInfo(name);
+  const hint = name === active
+    ? color.green(`${sym.bulletOn} ${t('picker.inUse')}`)
+    : account.lastUsed ? color.dim(relativeTime(account.lastUsed)) : '';
+  const summary = accountSummary(account);
+  const details = summary
+    ? [color.dim(summary), usageLine(account)]
+    : [color.dim(t('account.notSignedIn'))];
+  return { label: name.padEnd(width), value: name, hint, details, summary };
+}
+
+async function selectProfile({ launching = false } = {}) {
   const profiles = listProfiles();
-  if (!profiles.length) throw new Error('No profiles found. Run cpf to add one, or npx ai-profile-switch@latest init to import existing Claude settings.');
+  if (!profiles.length) {
+    throw userError(t('profiles.none'), [
+      { label: t('hint.add'), command: 'cpf add work' },
+      { label: t('hint.setup'), command: 'npx ai-profile-switch@latest init' },
+    ]);
+  }
   const active = getActiveProfile();
-  const selected = !process.stdin.isTTY || profiles.length === 1
-    ? (active ?? profiles[0])
-    : await prompt.select('Select a profile:', profiles, { output: process.stderr, initial: profiles.indexOf(active) });
+  const output = process.stderr;
+  colorFor(output);
+  if (!process.stdin.isTTY || profiles.length === 1) {
+    const selected = active ?? profiles[0];
+    assertRegisteredProfile(selected);
+    if (launching && output.isTTY) {
+      const summary = accountSummary(accountInfo(selected));
+      output.write(`${color.green(sym.stepDone)}  ${t('picker.starting', { profile: color.bold(selected) })}${summary ? `  ${color.dim(summary)}` : ''}\n`);
+    }
+    return selected;
+  }
+  const choices = profileChoices(profiles, active);
+  intro('ai-profile-switch', '', output);
+  const selected = await prompt.select(t('picker.question'), choices, {
+    output, initial: profiles.indexOf(active), numbered: true,
+    done: name => {
+      const { summary } = choices.find(choice => choice.value === name);
+      const message = t(launching ? 'picker.starting' : 'picker.switched', { profile: color.bold(name) });
+      return `${message}${summary ? `  ${color.dim(summary)}` : ''}`;
+    },
+  });
+  outro(selected && launching ? t('launch.opening') : '', output);
   if (selected) assertRegisteredProfile(selected);
   return selected;
 }
+
+// Declared below; the Windows resolver test runs that part on its own.
+export { resolveClaudeBinary };
 
 function executable(file) {
   try {

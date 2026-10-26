@@ -6,6 +6,7 @@ import {
   SHARED_DIR, SHAREABLE_ENTRIES, SHAREABLE_FILES, ACCOUNT_SKILL_ENTRIES,
 } from './constants.mjs';
 import { readMeta, getActiveProfile, getSharedEntries, setSharedEntries } from './config.mjs';
+import { t } from './i18n.mjs';
 import {
   pathExists, createLink, copyEntry, identicalEntries, emptyEntry, linkTarget, canonicalPath,
   profileDir, listProfiles,
@@ -93,7 +94,7 @@ export function syncShared(names = listProfiles(), options) {
 
 function validateEntry(entry) {
   if (!SHAREABLE_ENTRIES.includes(entry)) {
-    throw new Error(`"${entry}" cannot be shared. Choose one of: ${SHAREABLE_ENTRIES.join(', ')}`);
+    throw new Error(t('share.cannot', { entry, list: SHAREABLE_ENTRIES.join(', ') }));
   }
 }
 
@@ -120,9 +121,9 @@ function seedShared(entry, from) {
 export function shareEntry(entry, from = getActiveProfile()) {
   validateEntry(entry);
   const meta = readMeta();
-  if (!meta.shareSettings) throw new Error('Sharing needs shared settings. This setup keeps each profile separate.');
+  if (!meta.shareSettings) throw new Error(t('share.needsSettings'));
   const entries = meta.shared ?? [];
-  if (entries.includes(entry)) throw new Error(`"${entry}" is already shared`);
+  if (entries.includes(entry)) throw new Error(t('share.already', { entry }));
   mkdirSync(SHARED_DIR, { recursive: true });
   if (!pathExists(join(SHARED_DIR, entry))) seedShared(entry, from);
   setSharedEntries([...entries, entry]);
@@ -133,7 +134,7 @@ export function shareEntry(entry, from = getActiveProfile()) {
 export function unshareEntry(entry) {
   validateEntry(entry);
   const entries = getSharedEntries();
-  if (!entries.includes(entry)) throw new Error(`"${entry}" is not shared`);
+  if (!entries.includes(entry)) throw new Error(t('share.notShared', { entry }));
   const sharedPath = join(SHARED_DIR, entry);
   for (const name of listProfiles()) {
     if (entry === 'skills') {
